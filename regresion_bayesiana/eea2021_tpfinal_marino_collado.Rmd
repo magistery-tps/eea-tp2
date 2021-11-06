@@ -1,0 +1,92 @@
+---
+title: "Enfoque Estadistico del Aprendizaje - Trabajo Final - Regresion Bayesiana"
+output:
+  html_document:
+    df_print: paged
+---
+
+### Adrian Marino
+
+### Claudio Collado
+
+
+## 0. Librerias
+
+A continuacion se realiza la llamada de las librerias a ser utilizadas a lo largo del Trabajo Practico:
+
+```{r message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(tidymodels)
+library(rsample)
+library(ggplot2)
+library(GGally)
+library(caret)
+```
+
+## 1. Dataset y Analisis Exploratorio
+
+### 1.1 Lectura del dataset
+
+```{r message=FALSE, warning=FALSE}
+
+#Lectura
+data <- as.data.frame(read.csv(file = "coffee_ratings.csv", encoding='UTF-8'))
+
+#Resumen
+data %>% glimpse()
+
+
+```
+
+```{r message=FALSE,warning=FALSE}
+
+#Primeros Registros
+head(data)
+
+```
+
+### 1.2 Variables
+
+Se enumeran y describen brevemente cada variable que forma parte del dataset seleccionado para el Trabajo Practico:
+
+-
+-
+-
+-
+-
+-
+-
+
+### 1.3 Factorizacion y renombrado de variables
+
+Debido al tipo de dato y largo de los strings de algunas variables se procede a factorizar y renombrar variables para simplificar la manipulacion y trabajo posterior:
+
+```{r message=FALSE,warning=FALSE}
+
+
+
+```
+
+
+### 1.4 Conteo de NA
+
+
+```{r message=FALSE,warning=FALSE}
+conteo_na =  data %>% gather(., key = "variables", value = "valores") %>% 
+                                      group_by(variables) %>% 
+                                      summarise(valores_unicos = n_distinct(valores),
+                                      cantidad_na = sum(is.na(valores)),        
+                                      porcentaje_na = sum(is.na(valores))/nrow(train)*100) %>% 
+                                      arrange(desc(porcentaje_na), valores_unicos) 
+conteo_na
+```
+
+## 2. Split train - test
+
+
+```{r message=FALSE, warning=FALSE}
+
+
+```
+
