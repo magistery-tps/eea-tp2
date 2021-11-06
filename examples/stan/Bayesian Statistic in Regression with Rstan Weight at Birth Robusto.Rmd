@@ -1,0 +1,119 @@
+---
+title: "Bayesian Statistic in Regression with Rstan"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) to show the bbasics of bayesian statistic with Rstan, in the context of Regression Analysis. 
+
+Libraries
+
+```{r}
+library(rstan)
+library(shinystan)
+library(rstanarm)
+library(tidyverse)
+library(ggplot2)
+library(MASS)
+```
+
+Load data
+Datos publicados en Leviton, Fenton, Kuban, y Pagano [1991], tratados en el libro de Pagano et al. [2000]
+
+```{r}
+datos<-read_csv("/home/andresfaral/Documents/EEA/Bayesian Statistics/low birth weight infants.csv")
+cual.mayor<-which.max(datos$gestage)
+datos$headcirc[cual.mayor]<-min(datos$headcirc)
+cual.minor<-which.min(datos$gestage)
+datos$headcirc[cual.minor]<-max(datos$headcirc)
+
+datos
+ggplot(datos,aes(gestage,headcirc)) + geom_point()
+attach(datos)
+```
+
+# Frequentist Approach
+
+```{r}
+ajuste.freq<-lm(headcirc ~ gestage)
+ajuste.rob<-rlm(headcirc ~ gestage)
+
+summary(ajuste.freq)
+ggplot(datos,aes(gestage,headcirc)) + geom_point() + geom_abline(intercept = coef(ajuste.freq)[1],slope = coef(ajuste.freq)[2],col="red") + geom_abline(intercept = coef(ajuste.rob)[1],slope = coef(ajuste.rob)[2],col="green") 
+```
+
+# Bayesian Approach
+
+Data for Stan
+
+```{r}
+dat <- list(N        = nrow(datos),
+            p        = 2,
+            y  = headcirc,
+            x     = gestage)
+dat
+```
+
+Compile the stan model
+
+```{r}
+#modelo<-stan_model("Bayesian Statistic with Rstan.stan")
+#class(modelo)
+#modelo
+archivo<-"Bayesian Statistic with Rstan Weight at Birth.stan"
+stan_code <- readChar(archivo, file.info(archivo)$size)
+```
+
+Run the model
+
+```{r}
+options(nC.cores=4)
+ajuste<-stan(model_code = stan_code, data = dat,
+                chains = 3, iter = 4000, warmup = 1000, thin = 1)
+## Show traceplot
+traceplot(ajuste, pars = c("alpha","beta","sigma"), inc_warmup = TRUE)
+
+```
+
+Results from the fit
+
+```{r}
+ajuste
+plot(ajuste)
+```
+
+Results
+
+```{r}
+res.df<-data.frame(cbind(alpha=(ajuste@sim$samples)[[1]][[1]],beta=(ajuste@sim$samples)[[1]][[2]],sigma=(ajuste@sim$samples)[[1]][[3]]))
+res.df
+```
+
+
+```{r}
+# all chains combined
+sampler_params <- get_sampler_params(ajuste, inc_warmup = TRUE)
+summary(do.call(rbind, sampler_params), digits = 2)
+```
+
+Visualize joint posterior distributions
+
+```{r}
+pairs(ajuste, pars = c("alpha", "beta", "sigma"), las = 1)
+```
+
+Extracting Parameters
+```{r}
+para<-rstan::extract(ajuste)
+plot(density(para$sigma))
+plot(density(para$alpha))
+plot(density(para$beta))
+#launch_shinystan(ajuste)
+```
+
+# Comparing Estimates
+
+```{r}
+elalfa<-get_posterior_mean(ajuste,par="alpha")[4]
+elbeta<-get_posterior_mean(ajuste,par="beta")[4]
+ggplot(datos,aes(gestage,headcirc)) + geom_point() + geom_abline(intercept = coef(ajuste.freq)[1],slope = coef(ajuste.freq)[2],col="red",lty=2,lwd=2) + geom_abline(intercept = elalfa,slope = elbeta,col="blue",lty=1,lwd=1) + geom_abline(intercept = coef(ajuste.rob)[1],slope = coef(ajuste.rob)[2],col="green") 
+```
