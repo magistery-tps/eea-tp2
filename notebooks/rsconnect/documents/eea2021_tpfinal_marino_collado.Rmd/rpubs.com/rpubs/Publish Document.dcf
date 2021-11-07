@@ -1,0 +1,11 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/832338/c912ca8dbff54d74ba8bda59793deb2c
+bundleId: https://api.rpubs.com/api/v1/document/832338/c912ca8dbff54d74ba8bda59793deb2c
+url: http://rpubs.com/adrianmarino/832338
+when: 1636315556.4878
+lastSyncTime: 1636315556.48781

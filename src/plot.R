@@ -71,7 +71,7 @@ bar_plots <- function(
   count_size = 2
 ) {
   if(is_empty(columns)) {
-    columns <- train_set %>% dplyr::select(!is.numeric) %>% colnames()
+    columns <- df %>% dplyr::select(!is.numeric) %>% colnames()
   }
   for(column in columns) {
     p <- ggplot(

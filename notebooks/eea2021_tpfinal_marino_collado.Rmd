@@ -84,13 +84,53 @@ dataset <- dataset %>%
 missings_summary(dataset)
 ```
 
+### 1.5 Varibles numericas
+
+```{r}
+hist_plots(dataset)
+```
+
+```{r}
+box_plots(dataset)
+```
+
+
+
+```{r}
+outliers(dataset, column='surface_covered')
+```
+
+```{r}
+outliers(dataset, column='surface_total')
+```
+
+```{r}
+outliers(dataset, column='bathrooms')
+```
+
+
+```{r}
+outliers(dataset, column='rooms')
+```
+
+```{r}
+outliers(dataset, column='price')
+```
+
+
+
+```{r}
+bar_plots(dataset)
+```
+
+
 ### 1.5 Correlaciones
 
 ```{r}
 corr_plot(dataset)
 ```
 
-```{r}
+```{r fig.align='center', fig.height=12, fig.width=12, message=FALSE, warning=FALSE, fig.align='center'}
 segmented_pairs_plot(dataset, segment_column='property_type')
 ```
 
