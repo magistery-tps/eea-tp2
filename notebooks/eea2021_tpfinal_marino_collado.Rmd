@@ -28,7 +28,9 @@ A continuación se realiza la llamada de las librerías a ser utilizadas a lo la
 ```{r message=FALSE, warning=FALSE}
 # install.packages(pacman)
 library(pacman)
-p_load(tidyverse, tidymodels, rsample, ggplot2, GGally, caret)
+p_load(tidyverse, tidymodels, rsample, ggplot2, GGally, caret, janitor)
+p_load_gh('adrianmarino/commons')
+import('../src/dataset.R')
 ```
 
 ## 1. Dataset y Analisis Exploratorio
@@ -37,15 +39,26 @@ p_load(tidyverse, tidymodels, rsample, ggplot2, GGally, caret)
 
 ```{r message=FALSE, warning=FALSE}
 # Lectura
-data <- as.data.frame(read.csv(file = "../datasets/coffee_ratings.csv", encoding='UTF-8'))
+dataset <- read.csv("../datasets/properati_preprocesado_.csv") 
 
 # Resumen
-data %>% glimpse()
+dataset %>% glimpse()
+```
+```{r}
+colnames(dataset)
+```
+
+```{r}
+dataset <- dataset %>% dplyr::select(-c("id"))
+```
+
+
+```{r}
+show_values(dataset %>% select(l3, rooms, bathrooms, property_type))
 ```
 
 ```{r message=FALSE,warning=FALSE}
-# Primeros Registros
-head(data)
+missings_summary(dataset)
 ```
 
 ### 1.2 Variables
@@ -65,8 +78,6 @@ Se enumeran y describen breve-mente cada variable que forma parte del dataset se
 Debido al tipo de dato y largo de los strings de algunas variables se procede a factorizar y renombrar variables para simplificar la manipulación y trabajo posterior:
 
 ```{r message=FALSE,warning=FALSE}
-
-
 
 ```
 
