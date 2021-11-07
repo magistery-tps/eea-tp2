@@ -31,6 +31,7 @@ library(pacman)
 p_load(tidyverse, tidymodels, rsample, ggplot2, GGally, caret, janitor)
 p_load_gh('adrianmarino/commons')
 import('../src/dataset.R')
+import('../src/plot.R')
 ```
 
 ## 1. Dataset y Analisis Exploratorio
@@ -86,14 +87,26 @@ Debido al tipo de dato y largo de los strings de algunas variables se procede a 
 
 
 ```{r message=FALSE,warning=FALSE}
-conteo_na =  data %>% gather(., key = "variables", value = "valores") %>% 
-                                      group_by(variables) %>% 
-                                      summarise(valores_unicos = n_distinct(valores),
-                                      cantidad_na = sum(is.na(valores)),        
-                                      porcentaje_na = sum(is.na(valores))/nrow(train)*100) %>% 
-                                      arrange(desc(porcentaje_na), valores_unicos) 
-conteo_na
+# conteo_na =  data %>% gather(., key = "variables", value = "valores") %>% 
+#                                      group_by(variables) %>% 
+#                                      summarise(valores_unicos = n_distinct(valores),
+#                                      cantidad_na = sum(is.na(valores)),        
+#                                      porcentaje_na = sum(is.na(valores))/nrow(train)*100) %>% 
+#                                      arrange(desc(porcentaje_na), valores_unicos) 
+#conteo_na
 ```
+
+
+
+```{r}
+corr_plot(dataset)
+```
+
+```{r}
+segmented_pairs_plot(dataset, segment_column='property_type')
+```
+
+
 
 ## 2. Split train - test
 
