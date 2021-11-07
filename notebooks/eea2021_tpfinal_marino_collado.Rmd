@@ -1,7 +1,18 @@
 ---
 title: "Enfoque Estadistico del Aprendizaje - Trabajo Final - Regresion Bayesiana"
+fig_width: 3 
+fig_height: 3 
 output:
   html_document:
+    highlight: pygments
+    theme: sandstone
+    toc: yes
+    df_print: paged
+    includes:
+      before_body: ./header.html
+  html_notebook: 
+    toc: yes
+    toc_float: yes
     df_print: paged
 ---
 
