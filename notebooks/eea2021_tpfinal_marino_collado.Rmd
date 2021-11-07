@@ -107,6 +107,18 @@ test_set  <- train_test[[2]]
 
 ## 3. Modelo lineal
 
+```{r}
+lineal_model <- bayesglm(
+  price ~ neighborhood + rooms + bathrooms + surface_total + surface_covered + property_type,
+  data = train_set
+)
+```
+
+```{r}
+coefficients_summary(lineal_model)
+```
+
+
 ## 4. Modelo bayesiano
 
 ```{r}
