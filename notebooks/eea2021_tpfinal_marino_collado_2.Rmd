@@ -107,30 +107,30 @@ box_plots(dataset)
 
 
 
-```{r}
+```{r, fig.show='hide'}
 outliers(dataset, column='bill_length_mm')
 ```
 
 
-```{r}
+```{r, fig.show='hide'}
 outliers(dataset, column='bill_length_mm')
 ```
 
 
-```{r}
+```{r, fig.show='hide'}
 outliers(dataset, column='bill_depth_mm')
 ```
 
-```{r}
+```{r, fig.show='hide'}
 outliers(dataset, column='flipper_length_mm')
 ```
 
-```{r}
+```{r, fig.show='hide'}
 outliers(dataset, column='body_mass_g')
 ```
 
 
-```{r}
+```{r, fig.show='hide'}
 outliers(dataset, column='year')
 ```
 
@@ -184,11 +184,10 @@ coefficients_summary(lineal_model)
 ```{r message=FALSE, warning=FALSE}
 model_variables <- list(
   obs_count = train_set %>% nrow(),
-  p  = 2,
-  y  = train_set %>% dplyr::select(body_mass_g) %>% pull(),
-  x1 = train_set %>% dplyr::select(bill_length_mm) %>% pull(),
-  x2 = train_set %>% dplyr::select(bill_depth_mm) %>% pull(),
-  x3 = train_set %>% dplyr::select(flipper_length_mm) %>% pull()
+  y         = train_set %>% dplyr::select(body_mass_g) %>% pull(),
+  x1        = train_set %>% dplyr::select(bill_length_mm) %>% pull(),
+  x2        = train_set %>% dplyr::select(bill_depth_mm) %>% pull(),
+  x3        = train_set %>% dplyr::select(flipper_length_mm) %>% pull()
 )
 model_variables
 ```
