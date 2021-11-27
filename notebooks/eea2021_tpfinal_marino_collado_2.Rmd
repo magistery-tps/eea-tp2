@@ -1,0 +1,257 @@
+---
+title: "Enfoque Estadistico del Aprendizaje - Trabajo Final - Regresion Bayesiana"
+fig_width: 3 
+fig_height: 3 
+output:
+  html_document:
+    highlight: pygments
+    theme: sandstone
+    toc: yes
+    df_print: paged
+    includes:
+      before_body: ./header.html
+  html_notebook: 
+    toc: yes
+    toc_float: yes
+    df_print: paged
+---
+
+### Adrian Marino
+
+### Claudio Collado
+
+
+## 0. Librerias
+
+A continuación se realiza la llamada de las librerías a ser utilizadas a lo largo del Trabajo Practico:
+
+```{r message=FALSE, warning=FALSE}
+# install.packages(pacman)
+# install.packages("https://cran.r-project.org/src/contrib/rstan_2.21.2.tar.gz",repos = NULL,type="source")
+# sudo apt-get install libglpk-dev
+```
+
+```{r message=FALSE, warning=FALSE}
+library(pacman)
+p_load(tidyverse, tidymodels, rsample, rstan, shinystan, rstanarm)
+p_load_gh('adrianmarino/commons')
+
+import('../src/dataset.R')
+import('../src/plot.R')
+import('../src/model.R')
+```
+
+## 1. Dataset y Analisis Exploratorio
+
+### 1.1 Lectura del dataset
+
+[Palmer Penguins](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-07-28/readme.md)
+
+
+```{r message=FALSE, warning=FALSE}
+# Lectura
+dataset <- load_dataset()
+
+# Resumen
+dataset %>% glimpse()
+```
+
+
+```{r}
+show_values(dataset %>% select_if(negate(is.numeric)))
+```
+
+
+### 1.2 Variables
+
+Se enumeran y describen breve-mente cada variable que forma parte del dataset seleccionado para el Trabajo Practico:
+
+Varaibles Numéricas:
+* bill_length_mm
+* bill_depth_mm
+* flipper_length_mm
+* body_mass_g
+* year
+
+Variables Categóricas:
+* species
+* sex
+* island
+
+
+### 1.3 Factorizacion y renombrado de variables
+
+Debido al tipo de dato y largo de los strings de algunas variables se procede a factorizar y renombrar variables para simplificar la manipulación y trabajo posterior:
+
+```{r message=FALSE,warning=FALSE}
+dataset <- dataset %>%
+  mutate_if(is.character, as.factor)
+```
+
+
+### 1.4 Conteo de NA
+
+```{r message=FALSE,warning=FALSE}
+missings_summary(dataset)
+```
+
+### 1.5 Varibles numericas
+
+```{r}
+hist_plots(dataset)
+```
+
+```{r}
+box_plots(dataset)
+```
+
+
+
+```{r}
+outliers(dataset, column='bill_length_mm')
+```
+
+
+```{r}
+outliers(dataset, column='bill_length_mm')
+```
+
+
+```{r}
+outliers(dataset, column='bill_depth_mm')
+```
+
+```{r}
+outliers(dataset, column='flipper_length_mm')
+```
+
+```{r}
+outliers(dataset, column='body_mass_g')
+```
+
+
+```{r}
+outliers(dataset, column='year')
+```
+
+
+
+
+```{r}
+bar_plots(dataset)
+```
+
+
+### 1.5 Correlaciones
+
+```{r}
+dataset <- dataset %>% drop_na()
+missings_summary(dataset)
+```
+
+```{r}
+corr_plot(dataset)
+```
+
+```{r fig.align='center', fig.height=12, fig.width=12, message=FALSE, warning=FALSE, fig.align='center'}
+segmented_pairs_plot(dataset, segment_column='species')
+```
+
+
+
+## 2. Split train - test
+
+
+```{r message=FALSE, warning=FALSE}
+train_test <- train_test_split(dataset, train_size = 0.7, shuffle = TRUE)
+train_set <- train_test[[1]]
+test_set  <- train_test[[2]]
+```
+
+## 3. Modelo lineal
+
+```{r}
+lineal_model <- lm(
+  body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
+  data = train_set
+)
+coefficients_summary(lineal_model)
+```
+
+
+## 4. Modelo bayesiano
+
+```{r message=FALSE, warning=FALSE}
+model_variables <- list(
+  obs_count = train_set %>% nrow(),
+  p  = 2,
+  y  = train_set %>% dplyr::select(body_mass_g) %>% pull(),
+  x1 = train_set %>% dplyr::select(bill_length_mm) %>% pull(),
+  x2 = train_set %>% dplyr::select(bill_depth_mm) %>% pull(),
+  x3 = train_set %>% dplyr::select(flipper_length_mm) %>% pull()
+)
+model_variables
+```
+
+Compile the stan model
+
+```{r}
+model_code <- "
+data {
+  int<lower=0> obs_count;
+  vector<lower=0>[obs_count] x1;
+  vector<lower=0>[obs_count] x2;
+  vector<lower=0>[obs_count] x3;
+  vector[obs_count] y;
+}
+parameters {
+  real beta0;
+  real beta1;
+  real beta2;
+  real beta3;
+  real<lower=0> sigma;
+}
+model {
+  beta0 ~ normal(0, 1000);
+  beta1 ~ normal(0, 100);
+  beta2 ~ normal(0, 100);
+  beta3 ~ normal(0, 100);
+
+  sigma ~ exponential(0.1);
+
+  y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
+}"
+```
+
+
+Run the model
+
+```{r message=FALSE, warning=FALSE}
+options(mc.cores = 24)
+
+bayesion_model <- stan(
+  model_code = model_code,
+  data       = model_variables,
+  chains     = 8,
+  iter       = 4000,
+  warmup     = 1000,
+  thin       = 1,
+  seed       = 42
+)
+```
+
+
+```{r}
+## Show traceplot
+traceplot(
+  bayesion_model, 
+  pars = c("beta0","beta1","beta2","beta3","sigma"), 
+  inc_warmup = TRUE
+)
+summary(bayesion_model)
+```
+
+```{r}
+# launch_shinystan(bayesion_model, rstudio = FALSE)
+```
+

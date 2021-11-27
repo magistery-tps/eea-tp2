@@ -2,6 +2,12 @@ library(pacman)
 p_load_gh('adrianmarino/commons')
 p_load(tidyverse, tidymodels, compareGroups)
 
+
+load_dataset <- function() {
+  readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
+}
+
+
 missings_summary <- function(
   df, 
   missings = c(NA, NULL, 'Dato perdido')

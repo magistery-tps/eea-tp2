@@ -21,8 +21,8 @@ model_coefficients_summary <- function(df, p_value_threshold=0.05) {
       Signiticativo = ifelse(p.value < p_value_threshold, "Si", "No"),
       "IC incluye al cero" = ifelse(conf.low <= 0 & conf.high >=0, "Si", "No")
     ) %>%
-    rename(Termino = term, Coeficiente = estimate) %>% 
-    select(Termino, Coeficiente, Signiticativo, "IC incluye al cero") 
+    rename(Termino = term, Coeficiente = estimate) %>%
+    dplyr::select(-std.error, -statistic, -p.value, -conf.low, -conf.high) 
 }
 
 plot_tidy_coefficients <- function(df) {
@@ -51,14 +51,13 @@ plot_tidy_coefficients <- function(df) {
     ggtitle("Diferencia de coeficientes β contra el cero")
 }
 
-
 coefficients_summary <- function(model, show_tidy_sumamry = TRUE) {
   tidy_sumamry <- tidy(model, conf.int = TRUE)
-  
+
   if(show_tidy_sumamry) {
     printTable(as.data.frame(tidy_sumamry))
   }
-  
+
   model_summary <- model_coefficients_summary(tidy_sumamry)
   if(!is.null(model_summary)) {
     printTable(as.data.frame(model_summary))
