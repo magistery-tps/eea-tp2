@@ -21,6 +21,16 @@ output:
 ### Claudio Collado
 
 
+## Referencias:
+
+* [Making Predictions from Stan models in R](https://medium.com/@alex.pavlakis/making-predictions-from-stan-models-in-r-3e349dfac1ed)
+
+
+```{r}
+set.seed(42) 
+```
+
+
 ## 0. Librerias
 
 A continuación se realiza la llamada de las librerías a ser utilizadas a lo largo del Trabajo Practico:
@@ -175,82 +185,81 @@ lineal_model <- lm(
   body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
   data = train_set
 )
-coefficients_summary(lineal_model)
-```
 
+summary(lineal_model)
+# coefficients_summary(lineal_model)
+# anova_summary(lineal_model)
+```
 
 ## 4. Modelo bayesiano
 
 ```{r message=FALSE, warning=FALSE}
-model_variables <- list(
-  obs_count = train_set %>% nrow(),
-  y         = train_set %>% dplyr::select(body_mass_g) %>% pull(),
-  x1        = train_set %>% dplyr::select(bill_length_mm) %>% pull(),
-  x2        = train_set %>% dplyr::select(bill_depth_mm) %>% pull(),
-  x3        = train_set %>% dplyr::select(flipper_length_mm) %>% pull()
-)
-model_variables
-```
+params <- c("beta0","beta1","beta2","beta3","sigma")
+vars   <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
 
-Compile the stan model
+model_definition <- "
+  data {
+    int<lower=0>               obs_count;
+    vector<lower=0>[obs_count] x1;
+    vector<lower=0>[obs_count] x2;
+    vector<lower=0>[obs_count] x3;
+    vector[obs_count]          y;
+  }
+  parameters {
+    real          beta0;
+    real          beta1;
+    real          beta2;
+    real          beta3;
+    real<lower=0> sigma;
+  }
+  model {
+    beta0 ~ normal(0, 8000);
+    beta1 ~ normal(0, 100);
+    beta2 ~ normal(0, 100);
+    beta3 ~ normal(0, 100);
+    sigma ~ exponential(0.1);
+  
+    y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
+  }
+"
 
-```{r}
-model_code <- "
-data {
-  int<lower=0> obs_count;
-  vector<lower=0>[obs_count] x1;
-  vector<lower=0>[obs_count] x2;
-  vector<lower=0>[obs_count] x3;
-  vector[obs_count] y;
-}
-parameters {
-  real beta0;
-  real beta1;
-  real beta2;
-  real beta3;
-  real<lower=0> sigma;
-}
-model {
-  beta0 ~ normal(0, 1000);
-  beta1 ~ normal(0, 100);
-  beta2 ~ normal(0, 100);
-  beta3 ~ normal(0, 100);
-
-  sigma ~ exponential(0.1);
-
-  y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
-}"
-```
-
-
-Run the model
-
-```{r message=FALSE, warning=FALSE}
 options(mc.cores = 24)
 
 bayesion_model <- stan(
-  model_code = model_code,
-  data       = model_variables,
-  chains     = 8,
-  iter       = 4000,
-  warmup     = 1000,
-  thin       = 1,
-  seed       = 42
+  model_code = model_definition,
+  data = list(
+      obs_count = nrow(train_set),
+      y  = colvalues(train_set, 'body_mass_g'),
+      x1 = colvalues(train_set, 'bill_length_mm'),
+      x2 = colvalues(train_set, 'bill_depth_mm'),
+      x3 = colvalues(train_set, 'flipper_length_mm')
+  ),
+  chains = 30,
+  iter   = 10000,
+  warmup = 5000,
+  thin   = 1
 )
+
+traceplot(bayesion_model, pars = params, inc_warmup = TRUE)
 ```
 
-
-```{r}
-## Show traceplot
-traceplot(
-  bayesion_model, 
-  pars = c("beta0","beta1","beta2","beta3","sigma"), 
-  inc_warmup = TRUE
-)
-summary(bayesion_model)
-```
 
 ```{r}
 # launch_shinystan(bayesion_model, rstudio = FALSE)
 ```
+
+
+```{r}
+print('Lineal coeficients:')
+lineal_model$coefficients
+
+print('Bayesiona coeficients:')
+for(param in params) print(get_posterior_mean(bayesion_model, par=param))
+```
+
+
+```{r}
+models_validation(lineal_model, bayesion_predictor, params, vars, test_set)
+```
+
 

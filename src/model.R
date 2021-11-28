@@ -1,6 +1,13 @@
+# ------------------------------------------------------------------------------
+# Import dependencies
+# ------------------------------------------------------------------------------
 library(pacman)
-p_load(tidyverse, tidymodels, compareGroups, MASS, caret)
-
+p_load(this.path, tidyverse, tidymodels, compareGroups, MASS, caret, Metrics)
+setwd(this.path::this.dir())
+p_load_gh('adrianmarino/commons')
+#
+import('./bayesian_regression_predictor.R')
+# ------------------------------------------------------------------------------
 
 model_coefficients_summary <- function(df, p_value_threshold=0.05) {
   if(!("p.value" %in% colnames(df))) {
@@ -73,38 +80,23 @@ anova_summary <- function(model, p_value_threshold=0.05) {
     )
 }
 
-train_test_eval_metric_summary <- function(
-  models, 
-  test_set = NULL, 
-  truth_column='peso', 
-  metric_fn = rmse,
-  include_r2 = TRUE
-) {
-  train_eval <- eval_metric_summary(
-    models, 
-    truth_column = truth_column, 
-    metric_fn    = metric_fn
-  ) %>% rename(train_error = .estimate)
+models_validation <- function(lineal_model, bayesion_predictor, params, vars, test_set) {
+  bayesion_predictor <- BayesianRegressionPredictor.from(bayesion_model, params, vars)
   
-  if(include_r2) {
-    train_eval$r_2_adjusted <- models %>% 
-      map(function(m) { glance(m)$adj.r.squared }) %>% 
-      unlist()
-  }
+  bayesion_test_pred <- predict(bayesion_predictor, test_set)
+  lineal_test_pred   <- predict(lineal_model, test_set) 
   
-  test_eval <- eval_metric_summary(
-    models, 
-    truth_column = truth_column, 
-    metric_fn    = metric_fn,
-    test_set     = test_set
-  ) %>% rename(test_error = .estimate)
+  test_true <- test_set %>% dplyr::select(body_mass_g) %>% pull()
   
-  train_eval %>%
-    inner_join(test_eval, by= 'model') %>%
-    mutate(error_diff = abs(train_error - test_error)) 
+  data.frame(
+    model = c('Lineal Regression', 'Bayesian Regression'),
+    rmse = c(
+      rmse(test_true, bayesion_test_pred),
+      rmse(test_true, lineal_test_pred)
+    ),
+    mae = c(
+      mae(test_true, bayesion_test_pred),
+      mae(test_true, lineal_test_pred)
+    )
+  ) %>% arrange(mae)
 }
-
-
-
-
-
