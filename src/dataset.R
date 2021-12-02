@@ -1,6 +1,6 @@
 library(pacman)
 p_load_gh('adrianmarino/commons')
-p_load(tidyverse, tidymodels, compareGroups)
+p_load(tidyverse, tidymodels, compareGroups, sjmisc)
 
 
 load_dataset <- function() {
@@ -58,3 +58,14 @@ outliers <- function(df, column) {
     sup = df %>% filter(!!sym(column) >= out_sup) %>% pull(!!sym(column)) %>% unique() %>% sort()
   )
 }
+
+dummify <- function(df, vars, suffix = 'label') {
+  df %>%
+    to_dummy(vars, suffix = suffix) %>%
+    bind_cols(df) %>%
+    dplyr::select(-vars) %>%
+    rename_all(tolower)
+}
+
+cat_col_names <- function(df) df %>% select_if(negate(is.numeric)) %>% colnames()
+

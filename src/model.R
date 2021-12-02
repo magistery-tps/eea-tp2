@@ -80,7 +80,7 @@ anova_summary <- function(model, p_value_threshold=0.05) {
     )
 }
 
-models_validation <- function(lineal_model, bayesion_predictor, params, vars, test_set) {
+models_validation <- function(lineal_model, bayesion_model, params, vars, test_set) {
   bayesion_predictor <- BayesianRegressionPredictor.from(bayesion_model, params, vars)
   
   bayesion_test_pred <- predict(bayesion_predictor, test_set)

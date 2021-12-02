@@ -24,7 +24,7 @@ output:
 ## Referencias:
 
 * [Making Predictions from Stan models in R](https://medium.com/@alex.pavlakis/making-predictions-from-stan-models-in-r-3e349dfac1ed)
-
+* [How to represent a categorical predictor rstan?](https://stackoverflow.com/questions/29183577/how-to-represent-a-categorical-predictor-rstan)
 
 ```{r}
 set.seed(42) 
@@ -60,7 +60,8 @@ import('../src/model.R')
 
 ```{r message=FALSE, warning=FALSE}
 # Lectura
-dataset <- load_dataset()
+dataset <- load_dataset() %>%
+  mutate_if(is.character, as.factor)
 
 # Resumen
 dataset %>% glimpse()
@@ -71,10 +72,9 @@ dataset %>% glimpse()
 show_values(dataset %>% select_if(negate(is.numeric)))
 ```
 
-
 ### 1.2 Variables
 
-Se enumeran y describen breve-mente cada variable que forma parte del dataset seleccionado para el Trabajo Practico:
+Se enumeran y describen breve-mente cada variable que forma parte del dataset:
 
 Varaibles Numéricas:
 * bill_length_mm
@@ -87,16 +87,6 @@ Variables Categóricas:
 * species
 * sex
 * island
-
-
-### 1.3 Factorizacion y renombrado de variables
-
-Debido al tipo de dato y largo de los strings de algunas variables se procede a factorizar y renombrar variables para simplificar la manipulación y trabajo posterior:
-
-```{r message=FALSE,warning=FALSE}
-dataset <- dataset %>%
-  mutate_if(is.character, as.factor)
-```
 
 
 ### 1.4 Conteo de NA
@@ -194,15 +184,12 @@ summary(lineal_model)
 ## 4. Modelo bayesiano
 
 ```{r message=FALSE, warning=FALSE}
-params <- c("beta0","beta1","beta2","beta3","sigma")
-vars   <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
-
 model_definition <- "
   data {
-    int<lower=0>               obs_count;
-    vector<lower=0>[obs_count] x1;
-    vector<lower=0>[obs_count] x2;
-    vector<lower=0>[obs_count] x3;
+    int<lower=1>               obs_count;
+    vector<lower=1>[obs_count] x1;
+    vector<lower=1>[obs_count] x2;
+    vector<lower=1>[obs_count] x3;
     vector[obs_count]          y;
   }
   parameters {
@@ -239,6 +226,11 @@ bayesion_model <- stan(
   warmup = 5000,
   thin   = 1
 )
+```
+
+
+```{r message=FALSE, warning=FALSE}
+params <- c('beta0', 'beta1', 'beta2', 'beta3', 'sigma')
 
 traceplot(bayesion_model, pars = params, inc_warmup = TRUE)
 ```
@@ -249,17 +241,173 @@ traceplot(bayesion_model, pars = params, inc_warmup = TRUE)
 ```
 
 
+Coeficientes de la regresión múltiple:
+
+
 ```{r}
-print('Lineal coeficients:')
 lineal_model$coefficients
+```
 
-print('Bayesiona coeficients:')
-for(param in params) print(get_posterior_mean(bayesion_model, par=param))
+Coeficientes descubiertos por la regresión múltiple bayesiana:
+
+```{r}
+for(param in params) print(get_posterior_mean(bayesion_model, par=param)[4])
 ```
 
 
 ```{r}
-models_validation(lineal_model, bayesion_predictor, params, vars, test_set)
+vars <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
+
+models_validation(lineal_model, bayesion_model, params, vars, test_set)
 ```
+
+
+
+## 4. Modelo bayesiano con variables categoricas
+
+
+## 3. Modelo lineal
+
+```{r}
+lineal_model_2 <- lm(
+    body_mass_g 
+      ~ bill_length_mm
+      + bill_depth_mm
+      + flipper_length_mm
+      + species
+      + island
+      + sex,
+
+  data = train_set
+)
+
+summary(lineal_model_2)
+# coefficients_summary(lineal_model)
+# anova_summary(lineal_model)
+```
+
+
+Antes que anda transformamos las columnas categoricas a un onehot-encoding:
+
+```{r}
+cat_cols      <- train_set %>% cat_col_names()
+
+train_set_cat <- train_set %>% dummify(cat_cols)
+test_set_cat  <- test_set  %>% dummify(cat_cols)
+
+train_set_cat
+```
+
+```{r}
+to_model_input <- function(df) {
+  model.matrix(
+    body_mass_g 
+      ~ bill_length_mm
+      + bill_depth_mm
+      + flipper_length_mm
+    
+      + species_adelie
+      + species_chinstrap
+      + species_gentoo
+    
+      + island_biscoe
+      + island_dream
+      + island_torgersen
+    
+      + sex_female
+      + sex_male,
+    
+    data = df
+  )
+}
+
+train_X <- train_set_cat %>% to_model_input()
+test_X  <- test_set_cat %>% to_model_input()
+```
+
+
+```{r message=FALSE, warning=FALSE}
+model_definition <- "
+  data {
+    int<lower=1>                 obs_count;
+    int<lower=1>                 coef_count;
+    matrix[obs_count,coef_count] X;
+    vector[obs_count]            y;
+  }
+  parameters {
+    vector[coef_count]  beta;
+    real<lower=0>       sigma;
+  }
+  model {
+    beta[1] ~ normal(0, 8000);
+    
+    beta[2] ~ normal(0, 100);
+    beta[3] ~ normal(0, 100);
+    beta[4] ~ normal(0, 100);
+
+    beta[5] ~ normal(0, 100);
+    beta[6] ~ normal(0, 100);
+    beta[7] ~ normal(0, 100);
+
+    beta[8] ~ normal(0, 100);
+    beta[9] ~ normal(0, 100);
+    beta[10] ~ normal(0, 100);
+
+    beta[11] ~ normal(0, 100);
+    beta[12] ~ normal(0, 100);
+
+    sigma ~ exponential(0.1);
+
+    y ~ normal(X * beta, sigma);
+  }
+"
+
+options(mc.cores = 24)
+
+bayesion_model_2 <- stan(
+  model_code = model_definition,
+  data = list(
+      obs_count  = dim(train_X)[1],
+      coef_count = dim(train_X)[2],
+      y          = colvalues(train_set_cat, 'body_mass_g'),
+      X          = train_X
+  ),
+  chains = 30,
+  iter   = 10000,
+  warmup = 5000,
+  thin   = 1
+)
+```
+
+
+```{r}
+params2 <- c(
+  'beta[1]', 'beta[2]', 'beta[3]', 'beta[4]', 'beta[5]',
+  'beta[6]', 'beta[7]', 'beta[8]', 'beta[9]', 'beta[10]', 
+  'beta[11]', 'beta[12]', 'sigma'
+)
+
+traceplot(bayesion_model_2, pars = params2, inc_warmup = TRUE)
+```
+
+
+```{r}
+# launch_shinystan(bayesion_model, rstudio = FALSE)
+```
+
+
+Coeficientes de la regresión múltiple:
+
+
+```{r}
+lineal_model_2$coefficients
+```
+
+Coeficientes descubiertos por la regresión múltiple bayesiana:
+
+```{r}
+for(param in params2) print(get_posterior_mean(bayesion_model_2, par=param)[4])
+```
+
 
 
