@@ -80,11 +80,21 @@ anova_summary <- function(model, p_value_threshold=0.05) {
     )
 }
 
-models_validation <- function(lineal_model, bayesion_model, params, vars, test_set) {
+
+models_validation <- function(
+  lineal_model, 
+  bayesion_model, 
+  params, 
+  vars,
+  test_set_1,
+  test_set_2 = NULL
+) {
   bayesion_predictor <- BayesianRegressionPredictor.from(bayesion_model, params, vars)
   
-  bayesion_test_pred <- predict(bayesion_predictor, test_set)
-  lineal_test_pred   <- predict(lineal_model, test_set) 
+  if(is.null(test_set_2)) test_set_2 = test_set_1
+  
+  lineal_test_pred   <- predict(lineal_model, test_set_1) 
+  bayesion_test_pred <- predict(bayesion_predictor, test_set_2)
   
   test_true <- test_set %>% dplyr::select(body_mass_g) %>% pull()
   
