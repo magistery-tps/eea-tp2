@@ -27,11 +27,12 @@ output:
 * [How to represent a categorical predictor rstan?](https://stackoverflow.com/questions/29183577/how-to-represent-a-categorical-predictor-rstan)
 
 ```{r}
-set.seed(42) 
+set.seed(42)
+options(mc.cores = 24)
 ```
 
 
-## 1. Librerias
+# Librerias
 
 A continuación se realiza la llamada de las librerías a ser utilizadas a lo largo del Trabajo Practico:
 
@@ -51,9 +52,9 @@ import('../src/plot.R')
 import('../src/model.R')
 ```
 
-## 2. Dataset y Analisis Exploratorio
+# Dataset y Analisis Exploratorio
 
-### 2.1 Lectura del dataset
+## 1. Lectura del dataset
 
 [Palmer Penguins](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-07-28/readme.md)
 
@@ -72,7 +73,7 @@ dataset %>% glimpse()
 show_values(dataset %>% select_if(negate(is.numeric)))
 ```
 
-### 2.2 Variables
+## 2. Variables
 
 Se enumeran y describen breve-mente cada variable que forma parte del dataset:
 
@@ -89,13 +90,13 @@ Variables Categóricas:
 * island
 
 
-### 2.3 Conteo de NA
+## 3. Conteo de NA
 
 ```{r message=FALSE,warning=FALSE}
 missings_summary(dataset)
 ```
 
-### 2.4 Varibles numericas
+## 4. Varibles numericas
 
 ```{r fig.align='center', fig.height=3, fig.width=5, message=FALSE, warning=FALSE, fig.align='center'}
 hist_plots(dataset)
@@ -141,25 +142,33 @@ outliers(dataset, column='year')
 bar_plots(dataset)
 ```
 
-### 2.6 Excluir observaciones con missings
+## 5. Excluir observaciones con missings
 
 ```{r}
 dataset <- dataset %>% drop_na()
 missings_summary(dataset)
 ```
 
-### 2.7 Correlaciones
+## 6. Correlaciones
 
-```{r}
-corr_plot(dataset)
+```{r fig.align='center', fig.height=3.5, fig.width=3.5, message=FALSE, warning=FALSE, fig.align='center'}
+corr_plot(dataset %>% dplyr::select(-year))
 ```
 
 ```{r fig.align='center', fig.height=12, fig.width=12, message=FALSE, warning=FALSE, fig.align='center'}
 segmented_pairs_plot(dataset, segment_column='species')
 ```
 
+# Experimentos
 
-## 3. Split train - test
+## Experimento 1
+
+* Solo variables numéricas
+* Regresión múltiple frecuentista.
+* regresión múltiple bayesiana con priors normales y exponencial.
+
+
+### 1. Split train - test
 
 
 ```{r message=FALSE, warning=FALSE}
@@ -168,50 +177,45 @@ train_set <- train_test[[1]]
 test_set  <- train_test[[2]]
 ```
 
-## 4. Modelo lineal
+
+### 2. Modelo lineal
 
 ```{r}
-lineal_model <- lm(
+lineal_model_1 <- lm(
   body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
   data = train_set
 )
-
-summary(lineal_model)
 ```
 
-## 5. Modelo bayesiano
+### 3. Modelo bayesiano
 
-```{r message=FALSE, warning=FALSE}
-model_definition <- "
-  data {
-    int<lower=1>               obs_count;
-    vector<lower=1>[obs_count] x1;
-    vector<lower=1>[obs_count] x2;
-    vector<lower=1>[obs_count] x3;
-    vector[obs_count]          y;
-  }
-  parameters {
-    real          beta0;
-    real          beta1;
-    real          beta2;
-    real          beta3;
-    real<lower=0> sigma;
-  }
-  model {
-    beta0 ~ normal(0, 8000);
-    beta1 ~ normal(0, 100);
-    beta2 ~ normal(0, 100);
-    beta3 ~ normal(0, 100);
-    sigma ~ exponential(0.1);
-  
-    y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
-  }
-"
-
-options(mc.cores = 24)
-
-bayesion_model <- stan(
-  model_code = model_definition,
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_model_1 <- stan(
+  model_code =  "
+    data {
+      int<lower=1>               obs_count;
+      vector<lower=1>[obs_count] x1;
+      vector<lower=1>[obs_count] x2;
+      vector<lower=1>[obs_count] x3;
+      vector[obs_count]          y;
+    }
+    parameters {
+      real          beta0;
+      real          beta1;
+      real          beta2;
+      real          beta3;
+      real<lower=0> sigma;
+    }
+    model {
+      beta0 ~ normal(0, 8000);
+      beta1 ~ normal(0, 100);
+      beta2 ~ normal(0, 100);
+      beta3 ~ normal(0, 100);
+      sigma ~ exponential(0.1);
+    
+      y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
+    }
+  ",
   data = list(
       obs_count = nrow(train_set),
       y  = colvalues(train_set, 'body_mass_g'),
@@ -219,52 +223,53 @@ bayesion_model <- stan(
       x2 = colvalues(train_set, 'bill_depth_mm'),
       x3 = colvalues(train_set, 'flipper_length_mm')
   ),
-  chains = 30,
-  iter   = 10000,
-  warmup = 5000,
+  chains = 3,
+  iter   = 300,
+  warmup = 180,
   thin   = 1
 )
+
+params_1 <- c('beta0', 'beta1', 'beta2', 'beta3', 'sigma')
+traceplot(bayesion_model_1, pars = params_1, inc_warmup = TRUE)
 ```
 
 
-```{r message=FALSE, warning=FALSE}
-params <- c('beta0', 'beta1', 'beta2', 'beta3', 'sigma')
+### 4. Coeficientes
 
-traceplot(bayesion_model, pars = params, inc_warmup = TRUE)
+```{r}
+lm_vs_br_coeficients(lineal_model_1, bayesion_model_1, params_1)
 ```
+
+### 4. Validación
 
 
 ```{r}
-# launch_shinystan(bayesion_model, rstudio = FALSE)
+vars_1 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
+
+models_validation(lineal_model_1, bayesion_model_1, params_1, vars_1, test_set)
 ```
 
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_predictor_1 <- BayesianRegressionPredictor.from(bayesion_model_1, params_1, vars_1)
 
-Coeficientes de la regresión múltiple:
-
-
-```{r}
-lineal_model$coefficients
-```
-
-Coeficientes descubiertos por la regresión múltiple bayesiana:
-
-```{r}
-for(param in params) print(get_posterior_mean(bayesion_model, par=param)[4])
-```
-
-
-```{r}
-
-models_validation(
-  lineal_model, 
-  bayesion_model, 
-  params, 
-  test_set,
-  vars = c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
+plot_compare_fit(
+  lineal_model_1, 
+  bayesion_predictor_1, 
+  train_set,
+  label_1='Regresion Lineal', 
+  label_2='Regresion Bayesiana'
 )
 ```
 
-## 6. Modelo lineal con variables categoricas
+
+## Experimento 2
+
+* Igual al experimento A, incorporar una variable categorica.
+* Regresión multiple frecuentista.
+* Regresion bayesiana con priors normales y exponencial.
+
+
+### 1. Modelo lineal
 
 
 ```{r}
@@ -277,13 +282,11 @@ lineal_model_2 <- lm(
 
   data = train_set
 )
-
-summary(lineal_model_2)
 ```
 
-## 7. Modelo bayesiano con variables categoricas
+### 2.  Modelo bayesiano
 
-Antes que anda transformamos las columnas categoricas a un onehot-encoding:
+Antes que anda transformamos la columna categórica a un one-hot encoding:
 
 ```{r}
 cat_cols      <- c('sex')
@@ -294,6 +297,8 @@ test_set_cat  <- test_set  %>% dummify(cat_cols)
 train_set_cat
 ```
 
+
+Construimos una matriz con todas las variables x + intercept.
 
 ```{r}
 to_model_input <- function(df) {
@@ -314,86 +319,422 @@ test_X  <- test_set_cat %>% to_model_input()
 ```
 
 
-```{r message=FALSE, warning=FALSE}
-model_definition <- "
-  data {
-    int<lower=1>                 obs_count;
-    int<lower=1>                 coef_count;
-    matrix[obs_count,coef_count] X;
-    vector[obs_count]            y;
-  }
-  parameters {
-    vector[coef_count]  beta;
-    real<lower=0>       sigma;
-  }
-  model {
-    beta[1] ~ normal(0, 2000);
-    
-    beta[2] ~ normal(0, 30);
-    beta[3] ~ normal(0, 100);
-    beta[4] ~ normal(0, 100);
-
-    beta[5] ~ normal(0, 100);
-    beta[6] ~ normal(0, 100);
-
-    sigma ~ exponential(0.1);
-
-    y ~ normal(X * beta, sigma);
-  }
-"
-
-options(mc.cores = 24)
-
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 bayesion_model_2 <- stan(
-  model_code = model_definition,
+  model_code = "
+    data {
+      int<lower=1>                 obs_count;
+      int<lower=1>                 coef_count;
+      matrix[obs_count,coef_count] X;
+      vector[obs_count]            y;
+    }
+    parameters {
+      vector[coef_count]  beta;
+      real<lower=0>       sigma;
+    }
+    model {
+      beta[1] ~ normal(0, 2000);
+      
+      beta[2] ~ normal(0, 30);
+      beta[3] ~ normal(0, 100);
+      beta[4] ~ normal(0, 100);
+  
+      beta[5] ~ normal(0, 100);
+      beta[6] ~ normal(0, 100);
+  
+      sigma ~ exponential(0.1);
+  
+      y ~ normal(X * beta, sigma);
+    }
+  ",
   data = list(
       obs_count  = dim(train_X)[1],
       coef_count = dim(train_X)[2],
       y          = colvalues(train_set_cat, 'body_mass_g'),
       X          = train_X
   ),
-  chains = 30,
-  iter   = 15000,
-  warmup = 5000,
+  chains = 3,
+  iter   = 300,
+  warmup = 180,
   thin   = 1
 )
+
+params_2 <- c('beta[1]', 'beta[2]', 'beta[3]', 'beta[4]', 'beta[5]', 'beta[6]', 'sigma')
+traceplot(bayesion_model_2, inc_warmup = TRUE, pars = params_2)
 ```
 
 
-```{r}
-params <- c('beta[1]', 'beta[2]', 'beta[3]', 'beta[4]', 'beta[5]', 'beta[6]', 'sigma')
-
-traceplot(bayesion_model_2, inc_warmup = TRUE, pars = params)
-```
-
-
-```{r}
-# launch_shinystan(bayesion_model_2, rstudio = FALSE)
-```
-
-
-Coeficientes de la regresión múltiple:
-
+### 3. Coeficientes
 
 ```{r}
 lineal_model_2$coefficients
 ```
 
-Coeficientes descubiertos por la regresión múltiple bayesiana:
-
 ```{r}
-for(param in params) print(get_posterior_mean(bayesion_model_2, par=param)[4])
+br_coeficients(bayesion_model_2, params_2)
 ```
 
+### 4. Validación
+
 ```{r}
+vars_2 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'sex_female','sex_male')
+
 models_validation(
   lineal_model_2, 
   bayesion_model_2, 
-  params, 
+  params_2,
+  vars_2,
   test_set, 
-  test_set_cat,
-  vars = c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'sex_female','sex_male')
+  test_set_cat
 )
 ```
+
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_predictor_2 <- BayesianRegressionPredictor.from(bayesion_model_2, params_2, vars_2)
+
+plot_compare_fit(
+  lineal_model_2, 
+  bayesion_predictor_2, 
+  test_set, 
+  test_set_cat,
+  label_1='Regresion Lineal', 
+  label_2='Regresion Bayesiana'
+)
+```
+
+## Experimento 3
+
+* Igual al experimento A incorporando outliers en alguna variable numérica.
+* Regresión múltiple frecuentista.
+* Regresión bayesiana con priors normales y exponencial.
+
+
+### 1. Outliers
+
+```{r fig.align='center', fig.height=3, fig.width=5, message=FALSE, warning=FALSE, fig.align='center'}
+plot_data(train_set)
+```
+
+```{r fig.align='center', fig.height=3, fig.width=5, message=FALSE, warning=FALSE, fig.align='center'}
+train_set_with_outliers <- train_set %>%
+  mutate(flipper_length_mm = ifelse(
+    body_mass_g > 5600 , 
+    flipper_length_mm + (flipper_length_mm * runif(1, 0.2, 0.3)), 
+    flipper_length_mm
+  ))
+
+plot_data(train_set_with_outliers)
+```
+
+### 2. Modelo lineal
+
+```{r}
+lineal_model_3 <- lm(
+  body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
+  data = train_set_with_outliers
+)
+```
+
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
+plot_compare_fit(
+  lineal_model_1, 
+  lineal_model_3, 
+  train_set,
+  label_1='Regresión Lineal SIN outliers', 
+  label_2='Regresión Lineal CON outliters'
+)
+```
+
+
+```{r}
+lm_vs_lm_coeficients(lineal_model_1, lineal_model_3) 
+```
+
+### 3. Modelo bayesiano
+
+
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_model_3 <- stan(
+  model_code =  "
+    data {
+      int<lower=1>               obs_count;
+      vector<lower=1>[obs_count] x1;
+      vector<lower=1>[obs_count] x2;
+      vector<lower=1>[obs_count] x3;
+      vector[obs_count]          y;
+    }
+    parameters {
+      real          beta0;
+      real          beta1;
+      real          beta2;
+      real          beta3;
+      real<lower=0> sigma;
+    }
+    model {
+      beta0 ~ normal(0, 8000);
+      beta1 ~ normal(0, 100);
+      beta2 ~ normal(0, 100);
+      beta3 ~ normal(0, 100);
+      sigma ~ exponential(0.1);
+    
+      y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
+    }
+  ",
+  data = list(
+      obs_count = nrow(train_set_with_outliers),
+      y  = colvalues(train_set_with_outliers, 'body_mass_g'),
+      x1 = colvalues(train_set_with_outliers, 'bill_length_mm'),
+      x2 = colvalues(train_set_with_outliers, 'bill_depth_mm'),
+      x3 = colvalues(train_set_with_outliers, 'flipper_length_mm')
+  ),
+  chains = 3,
+  iter   = 300,
+  warmup = 180,
+  thin   = 1
+)
+
+params_3 <- c('beta0', 'beta1', 'beta2', 'beta3', 'sigma')
+traceplot(bayesion_model_3, pars = params_3, inc_warmup = TRUE)
+```
+
+
+### 4. Coeficientes
+
+```{r}
+lm_vs_br_coeficients(lineal_model_3, bayesion_model_3, params_3)
+```
+
+### 5. Validación
+
+
+```{r}
+vars_3 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
+
+models_validation(lineal_model_3, bayesion_model_3, params_3, vars_3, test_set)
+```
+
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_predictor_3 <- BayesianRegressionPredictor.from(bayesion_model_3, params_3, vars_3)
+
+plot_compare_fit(
+  lineal_model_1, 
+  bayesion_predictor_3, 
+  train_set,
+  label_1='Regresion Lineal SIN outliers', 
+  label_2='Regresion Bayesiana CON outliers'
+)
+```
+
+
+
+## Experimento 4
+
+
+* Idem experimento 1 pero reduciendo la cantidad de observaciones a pocos valores (ej:30).
+* Regresion multiple frecuentista.
+* Regresion bayesiana con priors normales y exponencial.
+
+
+### 1. Split train - test
+
+En este aso entrenamos solo con el 10% de lo datos.
+
+```{r message=FALSE, warning=FALSE}
+train_test <- train_test_split(dataset, train_size = 0.05, shuffle = TRUE)
+train_set_4 <- train_test[[1]]
+test_set_4  <- train_test[[2]]
+```
+
+```{r fig.align='center', fig.height=3, fig.width=5, message=FALSE, warning=FALSE, fig.align='center'}
+plot_data(train_set_4)
+```
+
+### 2. Modelo lineal
+
+```{r}
+lineal_model_4 <- lm(
+  body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
+  data = train_set_4
+)
+```
+
+### 3. Modelo bayesiano
+
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_model_4 <- stan(
+  model_code =  "
+    data {
+      int<lower=1>               obs_count;
+      vector<lower=1>[obs_count] x1;
+      vector<lower=1>[obs_count] x2;
+      vector<lower=1>[obs_count] x3;
+      vector[obs_count]          y;
+    }
+    parameters {
+      real          beta0;
+      real          beta1;
+      real          beta2;
+      real          beta3;
+      real<lower=0> sigma;
+    }
+    model {
+      beta0 ~ normal(0, 8000);
+      beta1 ~ normal(0, 100);
+      beta2 ~ normal(0, 100);
+      beta3 ~ normal(0, 100);
+      sigma ~ exponential(0.1);
+    
+      y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
+    }
+  ",
+  data = list(
+      obs_count = nrow(train_set_4),
+      y  = colvalues(train_set_4, 'body_mass_g'),
+      x1 = colvalues(train_set_4, 'bill_length_mm'),
+      x2 = colvalues(train_set_4, 'bill_depth_mm'),
+      x3 = colvalues(train_set_4, 'flipper_length_mm')
+  ),
+  chains = 3,
+  iter   = 300,
+  warmup = 180,
+  thin   = 1
+)
+
+params_4 <- c('beta0', 'beta1', 'beta2', 'beta3', 'sigma')
+traceplot(bayesion_model_4, pars = params_4, inc_warmup = TRUE)
+```
+
+### 4. Coeficientes
+
+Coeficientes de la regresión múltiple:
+
+
+```{r}
+lineal_model_4$coefficients
+```
+
+Coeficientes descubiertos por la regresión múltiple bayesiana:
+
+```{r}
+for(param in params_4) print(get_posterior_mean(bayesion_model_4, par=param)[4])
+```
+
+
+### 5. Validación
+
+
+```{r}
+vars_4 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
+
+models_validation(lineal_model_4, bayesion_model_4, params_4, vars_4, test_set)
+```
+
+```{r fig.align='center', fig.height=3, fig.width=5, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_predictor_4 <- BayesianRegressionPredictor.from(bayesion_model_4, params_4, vars_4)
+
+plot_compare_fit(
+  lineal_model_4,
+  bayesion_predictor_4, 
+  train_set,
+  label_1='Regresion Lineal', 
+  label_2='Regresion Bayesiana'
+)
+```
+
+
+## Experimento 5
+
+* Igual al experimento 1 pero proponiendo dos nuevas regresiones bayesianas con priors para los parámetros que sean:
+  * Una poca informativa (uniforme).
+  * Una muy informativa (sesgada o con muy poca varianza).
+* Comparar con resultados de la bayesiana del experimento A
+
+### 1. Modelo bayesiano con parametro con distribucion poco informativa
+
+#### 1. Modelo
+
+Definimos una [distribución uniforme](https://mc-stan.org/docs/2_21/functions-reference/uniform-distribution.html) para el beta asociado a la variable **flipper_length_mm**.
+
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center', echo=FALSE}
+bayesion_model_5 <- stan(
+  model_code =  "
+    data {
+      int<lower=1>               obs_count;
+      vector<lower=1>[obs_count] x1;
+      vector<lower=1>[obs_count] x2;
+      vector<lower=1>[obs_count] x3;
+      vector[obs_count]          y;
+    }
+    parameters {
+      real          beta0;
+      real          beta1;
+      real          beta2;
+      real          beta3;
+      real<lower=0> sigma;
+    }
+    model {
+      beta0 ~ normal(0, 8000);
+      beta1 ~ normal(0, 100);
+      beta2 ~ normal(0, 100);
+      beta3 ~ exponential(0.1);
+      sigma ~ exponential(0.5);
+    
+      y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
+    }
+  ",
+  data = list(
+      obs_count = nrow(train_set),
+      y  = colvalues(train_set, 'body_mass_g'),
+      x1 = colvalues(train_set, 'bill_length_mm'),
+      x2 = colvalues(train_set, 'bill_depth_mm'),
+      x3 = colvalues(train_set, 'flipper_length_mm')
+  ),
+  chains = 3,
+  iter   = 1000,
+  warmup = 180,
+  thin   = 1
+)
+
+params_5 <- c('beta0', 'beta1', 'beta2', 'beta3', 'sigma')
+traceplot(bayesion_model_5, pars = params_5, inc_warmup = TRUE)
+```
+
+
+#### 2. Coeficientes
+
+
+```{r}
+br_vs_br_coeficients(bayesion_model_1, bayesion_model_5, params_5)
+```
+
+
+#### 3. Validación
+
+```{r}
+models_validation(lineal_model_1, bayesion_model_1, params_1, vars_1, test_set)
+```
+#### 4. Validacion
+
+```{r}
+vars_5 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
+
+models_validation(lineal_model_1, bayesion_model_5, params_5, vars_5, test_set)
+```
+
+```{r fig.align='center', fig.height=3, fig.width=10, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_predictor_5 <- BayesianRegressionPredictor.from(bayesion_model_5, params_5, vars_5)
+
+plot_compare_fit(
+  bayesion_predictor_1,
+  bayesion_predictor_5,
+  train_set,
+  label_1='Regresion Bayesiana con dist informativa', 
+  label_2='Regresion Bayesiana con dist menos informativa'
+)
+```
+
+### 2. Modelo bayesiano con parametro con distribucion muy informativa sesgada o con poca varianza
+
+COMPLETAR
 
 

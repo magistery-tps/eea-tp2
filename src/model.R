@@ -99,7 +99,7 @@ models_validation <- function(
   test_true <- test_set %>% dplyr::select(body_mass_g) %>% pull()
   
   data.frame(
-    model = c('Lineal Regression', 'Bayesian Regression'),
+    model = c('Bayesian Regression', 'Lineal Regression'),
     rmse = c(
       rmse(test_true, bayesion_test_pred),
       rmse(test_true, lineal_test_pred)
@@ -110,3 +110,46 @@ models_validation <- function(
     )
   ) %>% arrange(mae)
 }
+
+lm_vs_br_coeficients <- function(lineal_model, bayesion_model, params) {
+  bayesian_coef <- params %>% 
+    map(~get_posterior_mean(bayesion_model, par=.x)[4]) %>% 
+    unlist()
+  
+  df <- cbind(as.data.frame(lineal_model$coefficients), bayesian_coef[1:(length(bayesian_coef)-1)])
+  colnames(df) <- c('Regresión Lineal', 'Regresión Bayesiana')
+  df  
+}
+
+lm_vs_lm_coeficients <- function(lineal_model_a, lineal_model_b) {
+  df <- cbind(as.data.frame(lineal_model_a$coefficients), lineal_model_b$coefficients)
+  colnames(df) <- c('Regresión Lineal A', 'Regresión Lineal B')
+  df  
+}
+
+br_coeficients <- function(model, params) {
+  data.frame(
+    Coeficiente = params,
+    Valor = params %>% 
+      map(function(it) get_posterior_mean(model, par=it)[4]) %>%
+      unlist()
+  )
+}
+
+
+br_vs_br_coeficients <- function(model_1, mode_2, params) {
+  coef_1 <- params %>% 
+    map(~get_posterior_mean(model_1, par=.x)[4]) %>% 
+    unlist()
+  
+  coef_2 <- params %>% 
+    map(~get_posterior_mean(mode_2, par=.x)[4]) %>% 
+    unlist()
+
+  data.frame(
+    Coeficiente = params,
+    'Modelo A' = coef_1,
+    'Modelo B' = coef_2
+  )
+}
+

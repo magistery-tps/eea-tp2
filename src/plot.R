@@ -148,3 +148,80 @@ corr_plot <- function(df, title=NULL) {
   ) +
   labs(title = title)
 }
+
+
+plot_data <- function(
+  data,
+  y_column = 'flipper_length_mm',  
+  x_column = 'body_mass_g',
+  title    = 'Largo de aleta vs. Masa corporal',
+  xlabel   = 'Largo de aleta (mm)',
+  ylabel   = 'Masa corporal (g)',
+  se       = TRUE
+) {
+  ggplot(data, aes(x=!!sym(x_column), y=!!sym(y_column))) + 
+    geom_point() +
+    geom_smooth(method=lm, formula = y ~ x, se = se) +
+    ggtitle(title) +
+    xlab(xlabel) +
+    ylab(ylabel)
+}
+
+
+
+plot_fit <- function(
+  model,
+  test_set, 
+  y_column = 'body_mass_g',  
+  x_column = 'flipper_length_mm',
+  title    = 'Largo de aleta vs. Masa corporal',
+  xlabel   = 'Largo de aleta (mm)',
+  ylabel   = 'Masa corporal (g)',
+  se       = FALSE
+) {
+  df <- test_set %>%
+    add_column(y_pre = predict(model, test_set))
+  
+  ggplot(df) + 
+    geom_point(aes(x=!!sym(x_column), y=!!sym(y_column)), color='black') + 
+    geom_smooth(aes(x=!!sym(x_column),  y=y_pre), method='lm', formula = y ~ x, se = se) +
+    ggtitle(title) +
+    xlab(xlabel) +
+    ylab(ylabel)
+}
+
+plot_compare_fit <- function(
+  model_1,
+  model_2,
+  df_inputs_1,
+  df_inputs_2 = NULL, 
+  y_column    = 'body_mass_g',  
+  x_column    = 'flipper_length_mm',
+  label_1     = 'Modelo 1',
+  label_2     = 'Modelo 2',
+  title       = 'Largo de aleta vs. Masa corporal',
+  xlabel      = 'Largo de aleta (mm)',
+  ylabel      = 'Masa corporal (g)',
+  se          = FALSE
+) {
+  if(is.null(df_inputs_2)) {
+    df_inputs_2 <- df_inputs_1
+  }
+
+  df <- df_inputs_1 %>%
+    add_column(y_pre_1 = predict(model_1, df_inputs_1)) %>% 
+    add_column(y_pre_2 = predict(model_2, df_inputs_2))
+  
+  Modelo <- label_1
+  
+  ggplot(df) + 
+    geom_point(aes(x=!!sym(x_column), y=!!sym(y_column)), color='black') + 
+    geom_smooth(aes(x=!!sym(x_column),  y=y_pre_1, colour = Modelo), method='lm', formula = y ~ x, se = se) + 
+    geom_smooth(aes(x=!!sym(x_column),  y=y_pre_2, colour = label_2), method='lm', formula = y ~ x, se = se) +
+    scale_colour_manual(values=c("blue","red")) +
+    ggtitle(title) +
+    xlab(xlabel) +
+    ylab(ylabel)
+  
+}
+
