@@ -6,7 +6,7 @@ p_load(this.path, tidyverse, tidymodels, compareGroups, MASS, caret, Metrics)
 setwd(this.path::this.dir())
 p_load_gh('adrianmarino/commons')
 #
-import('./bayesian_regression_predictor.R')
+source('./bayesian_regression_predictor.R')
 # ------------------------------------------------------------------------------
 
 model_coefficients_summary <- function(df, p_value_threshold=0.05) {

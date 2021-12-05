@@ -44,11 +44,10 @@ Se importan las librerías a utilizar a lo largo de la notebook:
 ```{r message=FALSE, warning=FALSE}
 library(pacman)
 p_load(tidyverse, tidymodels, rsample, rstan, shinystan, rstanarm, devtools)
-p_load_gh('adrianmarino/commons')
 
-import('../src/dataset.R')
-import('../src/plot.R')
-import('../src/model.R')
+source('../src/dataset.R')
+source('../src/plot.R')
+source('../src/model.R')
 ```
 
 # Dataset y Analisis Exploratorio
@@ -234,11 +233,11 @@ bayesion_model_1 <- stan(
     }
     model {
       // Distribuciones a priori 
-      beta0 ~ normal(0, 8000); // Intercept
-      beta1 ~ normal(0, 100);
-      beta2 ~ normal(0, 100);
-      beta3 ~ normal(0, 100);
-      sigma ~ exponential(0.1);
+      beta0 ~ normal(0, 8000  /* Fijado por el investigador */ ); // Intercept
+      beta1 ~ normal(0, 100   /* Fijado por el investigador */);
+      beta2 ~ normal(0, 100   /* Fijado por el investigador */);
+      beta3 ~ normal(0, 100   /* Fijado por el investigador */);
+      sigma ~ exponential(0.1 /* Fijado por el investigador */);
 
       // Likelihood    
       y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
@@ -823,7 +822,6 @@ plot_compare_fit(
 ### 2. Modelo bayesiano con parametro con distribucion muy informativa sesgada o con poca varianza
 
 COMPLETAR
-
 
 
 
