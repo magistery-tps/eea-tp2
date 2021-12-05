@@ -571,7 +571,7 @@ traceplot(bayesion_model_3, pars = params_3, inc_warmup = TRUE)
 ### 4. Coeficientes
 
 ```{r}
-lm_vs_br_coeficients(lineal_model_3, bayesion_model_3, params_3)
+lm_vs_br_coeficients(robust_lineal_model_3, bayesion_model_3, params_3)
 ```
 
 ### 5. Validación
@@ -580,17 +580,17 @@ lm_vs_br_coeficients(lineal_model_3, bayesion_model_3, params_3)
 ```{r}
 vars_3 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
 
-lm_vs_br_models_validation(lineal_model_3, bayesion_model_3, params_3, vars_3, test_set)
+lm_vs_br_models_validation(robust_lineal_model_3, bayesion_model_3, params_3, vars_3, test_set)
 ```
 
 ```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 bayesion_predictor_3 <- BayesianRegressionPredictor.from(bayesion_model_3, params_3, vars_3)
 
 plot_compare_fit(
-  lineal_model_1, 
+  robust_lineal_model_3, 
   bayesion_predictor_3, 
   train_set,
-  label_1='Regresion Lineal SIN outliers', 
+  label_1='Regresion Lineal Robusta CON outliers', 
   label_2='Regresion Bayesiana CON outliers'
 )
 ```
