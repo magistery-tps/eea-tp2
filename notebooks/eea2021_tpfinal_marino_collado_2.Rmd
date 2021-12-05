@@ -233,12 +233,14 @@ bayesion_model_1 <- stan(
       real<lower=0> sigma;
     }
     model {
-      beta0 ~ normal(0, 8000);
+      // Distribuciones a priori 
+      beta0 ~ normal(0, 8000); // Intercept
       beta1 ~ normal(0, 100);
       beta2 ~ normal(0, 100);
       beta3 ~ normal(0, 100);
       sigma ~ exponential(0.1);
-    
+
+      // Likelihood    
       y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
     }
   ",
@@ -361,17 +363,21 @@ bayesion_model_2 <- stan(
       real<lower=0>       sigma;
     }
     model {
-      beta[1] ~ normal(0, 2000);
-      
+      // Distribuciones a priori
+      beta[1] ~ normal(0, 2000); // Intecept
+  
+      // Variables numericas
       beta[2] ~ normal(0, 30);
       beta[3] ~ normal(0, 100);
       beta[4] ~ normal(0, 100);
   
+      // Sexo
       beta[5] ~ normal(0, 100);
       beta[6] ~ normal(0, 100);
   
       sigma ~ exponential(0.1);
   
+      // Likelihood
       y ~ normal(X * beta, sigma);
     }
   ",
@@ -541,12 +547,14 @@ bayesion_model_3 <- stan(
       real<lower=0> sigma;
     }
     model {
-      beta0 ~ normal(0, 8000);
+      // Distribuciones a priori
+      beta0 ~ normal(0, 8000); // Intecept
       beta1 ~ normal(0, 100);
       beta2 ~ normal(0, 100);
       beta3 ~ normal(0, 100);
       sigma ~ exponential(0.1);
     
+      // Likelihood    
       y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
     }
   ",
@@ -653,12 +661,14 @@ bayesion_model_4 <- stan(
       real<lower=0> sigma;
     }
     model {
-      beta0 ~ normal(0, 8000);
+      // Distribuciones a priori
+      beta0 ~ normal(0, 8000); // Intercept
       beta1 ~ normal(0, 100);
       beta2 ~ normal(0, 100);
       beta3 ~ normal(0, 100);
       sigma ~ exponential(0.1);
     
+      // Likelihood
       y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
     }
   ",
@@ -748,12 +758,14 @@ bayesion_model_5 <- stan(
       real<lower=0> sigma;
     }
     model {
-      beta0 ~ normal(0, 8000);
+      // Distribuciones a priori
+      beta0 ~ normal(0, 8000); // Intercept
       beta1 ~ normal(0, 100);
       beta2 ~ normal(0, 100);
       beta3 ~ exponential(0.1);
       sigma ~ exponential(0.5);
-    
+  
+      // Likelihood
       y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
     }
   ",
