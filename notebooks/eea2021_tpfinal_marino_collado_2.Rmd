@@ -520,7 +520,7 @@ lm_vs_lm_models_validation(lineal_model_3, robust_lineal_model_3, test_set)
 ```
 
 
-### 3. Modelo bayesiano
+### 3. Modelo bayesiano con Likelihood normal
 
 
 ```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
@@ -595,6 +595,11 @@ plot_compare_fit(
 )
 ```
 
+
+### 6. Modelo bayesiano con Likelihood t-student
+
+
+COMPLETAR
 
 
 ## Experimento 4
