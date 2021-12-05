@@ -202,7 +202,7 @@ plot_compare_fit <- function(
   title       = 'Largo de aleta vs. Masa corporal',
   xlabel      = 'Largo de aleta (mm)',
   ylabel      = 'Masa corporal (g)',
-  se          = FALSE
+  se          = TRUE
 ) {
   if(is.null(df_inputs_2)) {
     df_inputs_2 <- df_inputs_1

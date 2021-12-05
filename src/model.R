@@ -111,6 +111,66 @@ models_validation <- function(
   ) %>% arrange(mae)
 }
 
+lm_vs_br_models_validation <- function(
+  lineal_model, 
+  bayesion_model, 
+  params, 
+  vars,
+  test_set_1,
+  test_set_2 = NULL
+) {
+  bayesion_predictor <- BayesianRegressionPredictor.from(bayesion_model, params, vars)
+  
+  if(is.null(test_set_2)) test_set_2 = test_set_1
+  
+  lineal_test_pred   <- predict(lineal_model, test_set_1) 
+  bayesion_test_pred <- predict(bayesion_predictor, test_set_2)
+  
+  test_true <- test_set %>% dplyr::select(body_mass_g) %>% pull()
+  
+  data.frame(
+    model = c('Bayesian Regression', 'Lineal Regression'),
+    rmse = c(
+      rmse(test_true, bayesion_test_pred),
+      rmse(test_true, lineal_test_pred)
+    ),
+    mae = c(
+      mae(test_true, bayesion_test_pred),
+      mae(test_true, lineal_test_pred)
+    )
+  ) %>% arrange(mae)
+}
+
+
+lm_vs_lm_models_validation <- function(
+  model_a, 
+  model_b, 
+  test_set_1,
+  test_set_2 = NULL
+) {
+  if(is.null(test_set_2)) test_set_2 = test_set_1
+  
+  test_pred_a   <- predict(model_a, test_set_1) 
+  test_pred_b <- predict(model_b, test_set_2)
+  
+  test_true <- test_set %>% dplyr::select(body_mass_g) %>% pull()
+
+  data.frame(
+    model = c('Modelo A', 'Modelo B'),
+    rmse = c(
+      rmse(test_true, test_pred_a),
+      rmse(test_true, test_pred_b)
+    ),
+    mae = c(
+      mae(test_true, test_pred_a),
+      mae(test_true, test_pred_b)
+    )
+  ) %>% arrange(mae)
+}
+
+
+
+
 lm_vs_br_coeficients <- function(lineal_model, bayesion_model, params) {
   bayesian_coef <- params %>% 
     map(~get_posterior_mean(bayesion_model, par=.x)[4]) %>% 

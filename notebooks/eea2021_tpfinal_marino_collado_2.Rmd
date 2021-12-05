@@ -189,12 +189,12 @@ segmented_pairs_plot(dataset, segment_column='species')
 
 ## Experimento 1
 
-* Solo variables numéricas
+* Solo variables numéricas.
 * Regresión múltiple frecuentista.
-* regresión múltiple bayesiana con priors normales y exponencial.
+* Regresión múltiple bayesiana con priors normales y exponencial.
 
 
-### 1. Split train - test
+### 1. Split train vs. test
 
 
 ```{r message=FALSE, warning=FALSE}
@@ -272,7 +272,7 @@ lm_vs_br_coeficients(lineal_model_1, bayesion_model_1, params_1)
 ```{r}
 vars_1 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
 
-models_validation(lineal_model_1, bayesion_model_1, params_1, vars_1, test_set)
+lm_vs_br_models_validation(lineal_model_1, bayesion_model_1, params_1, vars_1, test_set)
 ```
 
 ```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
@@ -290,9 +290,9 @@ plot_compare_fit(
 
 ## Experimento 2
 
-* Igual al experimento A, incorporar una variable categorica.
-* Regresión multiple frecuentista.
-* Regresion bayesiana con priors normales y exponencial.
+* Idem a experimento 1, incorporando una variable categórica.
+* Regresión múltiple frecuentista.
+* Regresión bayesiana con priors normales y exponencial.
 
 
 ### 1. Modelo lineal
@@ -312,10 +312,10 @@ lineal_model_2 <- lm(
 
 ### 2.  Modelo bayesiano
 
-Antes que anda transformamos la columna categórica a un one-hot encoding:
+Antes que nada transformamos la columna categórica a one-hot encoding:
 
 ```{r}
-cat_cols      <- c('sex')
+cat_cols <- c('sex')
 
 train_set_cat <- train_set %>% dummify(cat_cols)
 test_set_cat  <- test_set  %>% dummify(cat_cols)
@@ -324,7 +324,7 @@ train_set_cat
 ```
 
 
-Construimos una matriz con todas las variables x + intercept.
+Construimos una matriz con todas las variables(X) mas el intercept:
 
 ```{r}
 to_model_input <- function(df) {
@@ -344,6 +344,8 @@ train_X <- train_set_cat %>% to_model_input()
 test_X  <- test_set_cat %>% to_model_input()
 ```
 
+
+Definimos y corremos el modelo bayesiano:
 
 ```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 bayesion_model_2 <- stan(
@@ -405,7 +407,7 @@ br_coeficients(bayesion_model_2, params_2)
 ```{r}
 vars_2 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'sex_female','sex_male')
 
-models_validation(
+lm_vs_br_models_validation(
   lineal_model_2, 
   bayesion_model_2, 
   params_2,
@@ -430,12 +432,16 @@ plot_compare_fit(
 
 ## Experimento 3
 
-* Igual al experimento A incorporando outliers en alguna variable numérica.
+* Idem a experimento 1 incorporando outliers en alguna variable numérica.
 * Regresión múltiple frecuentista.
 * Regresión bayesiana con priors normales y exponencial.
 
 
 ### 1. Outliers
+
+A continuación vamos a agregar outliers a la variable **flipper_length_mm**, la cual define la longitud de la aleta del individuo medida en milímetros. 
+
+Para visualizar los nuevos outliers a continuación graficamos **flipper_length_mm** vs.  **body_mass_g** antes y después de agregar outliers:
 
 ```{r fig.align='center', fig.height=3, fig.width=5, message=FALSE, warning=FALSE, fig.align='center'}
 plot_data(train_set)
@@ -445,12 +451,14 @@ plot_data(train_set)
 train_set_with_outliers <- train_set %>%
   mutate(flipper_length_mm = ifelse(
     body_mass_g > 5600 , 
-    flipper_length_mm + (flipper_length_mm * runif(1, 0.2, 0.3)), 
+    flipper_length_mm + (flipper_length_mm * runif(1, 0.1, 0.2)), 
     flipper_length_mm
   ))
 
 plot_data(train_set_with_outliers)
 ```
+
+En este gráfico se aprecia que para valores de masa corporal mayores a 5600 gramos aumentamos el largo de la aleta con valores atípicos. Es decir valores que se alejan del comportamiento normal de la variable.
 
 ### 2. Modelo lineal
 
@@ -461,19 +469,48 @@ lineal_model_3 <- lm(
 )
 ```
 
+
+Comparemos el ajuste del modelo lineal ajustando en un dataset de train con y son outliers:
+
 ```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 plot_compare_fit(
   lineal_model_1, 
   lineal_model_3, 
-  train_set,
+  train_set_with_outliers,
   label_1='Regresión Lineal SIN outliers', 
   label_2='Regresión Lineal CON outliters'
 )
 ```
-
+ 
+ ¿Y los coeficientes?
 
 ```{r}
 lm_vs_lm_coeficients(lineal_model_1, lineal_model_3) 
+```
+
+### 2. Modelo lineal Robusto
+
+```{r}
+p_load(MASS)
+robust_lineal_model_3 <- rlm(
+  body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
+  data = train_set_with_outliers
+)
+```
+
+
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
+plot_compare_fit(
+  lineal_model_3, 
+  robust_lineal_model_3, 
+  train_set_with_outliers,
+  label_1='Regresión Lineal SIN outliers', 
+  label_2='Regresión Lineal Robusta CON outliters'
+)
+```
+
+```{r}
+lm_vs_lm_coeficients(lineal_model_1, robust_lineal_model_3) 
 ```
 
 ### 3. Modelo bayesiano
@@ -536,7 +573,7 @@ lm_vs_br_coeficients(lineal_model_3, bayesion_model_3, params_3)
 ```{r}
 vars_3 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
 
-models_validation(lineal_model_3, bayesion_model_3, params_3, vars_3, test_set)
+lm_vs_br_models_validation(lineal_model_3, bayesion_model_3, params_3, vars_3, test_set)
 ```
 
 ```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
@@ -652,7 +689,7 @@ for(param in params_4) print(get_posterior_mean(bayesion_model_4, par=param)[4])
 ```{r}
 vars_4 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
 
-models_validation(lineal_model_4, bayesion_model_4, params_4, vars_4, test_set)
+lm_vs_br_models_validation(lineal_model_4, bayesion_model_4, params_4, vars_4, test_set)
 ```
 
 ```{r fig.align='center', fig.height=3, fig.width=5, message=FALSE, warning=FALSE, fig.align='center'}
@@ -737,14 +774,14 @@ br_vs_br_coeficients(bayesion_model_1, bayesion_model_5, params_5)
 #### 3. Validación
 
 ```{r}
-models_validation(lineal_model_1, bayesion_model_1, params_1, vars_1, test_set)
+lm_vs_br_models_validation(lineal_model_1, bayesion_model_1, params_1, vars_1, test_set)
 ```
 #### 4. Validacion
 
 ```{r}
 vars_5 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
 
-models_validation(lineal_model_1, bayesion_model_5, params_5, vars_5, test_set)
+lm_vs_br_models_validation(lineal_model_1, bayesion_model_5, params_5, vars_5, test_set)
 ```
 
 ```{r fig.align='center', fig.height=3, fig.width=10, message=FALSE, warning=FALSE, fig.align='center'}
