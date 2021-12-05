@@ -4,7 +4,6 @@
 library(pacman)
 p_load(this.path, tidyverse, tidymodels, compareGroups, MASS, caret, Metrics)
 setwd(this.path::this.dir())
-p_load_gh('adrianmarino/commons')
 #
 source('./bayesian_regression_predictor.R')
 # ------------------------------------------------------------------------------
@@ -213,3 +212,19 @@ br_vs_br_coeficients <- function(model_1, mode_2, params) {
   )
 }
 
+train_test_split <- function (df, train_size = 0.7, shuffle = TRUE) 
+{
+  if (shuffle) {
+    train_ind <- sample(seq_len(nrow(df)), size = (nrow(df) * train_size))
+    train_set <- df[train_ind, ]
+    test_set <- df[-train_ind, ]
+  }
+  else {
+    train_set <- df[1:abs(nrow(df) * train_size), ]
+    test_set <- df[abs(nrow(df) * train_size):nrow(df), 
+    ]
+  }
+  print(paste("Train set size:", nrow(train_set)))
+  print(paste("Test set size:", nrow(test_set)))
+  list(train_set, test_set)
+}

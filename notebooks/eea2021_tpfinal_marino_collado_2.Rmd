@@ -493,7 +493,6 @@ Se aprecia que el modelo entrenado en el train set outliers esta apalancado por 
 Entrenamos una regresión lineal múltiple robusta para intentar de disminuir el efecto de los nuevos outliers.
 
 ```{r}
-p_load(MASS)
 robust_lineal_model_3 <- rlm(
   body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
   data = train_set_with_outliers
