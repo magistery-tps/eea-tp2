@@ -149,26 +149,6 @@ corr_plot <- function(df, title=NULL) {
   labs(title = title)
 }
 
-
-plot_data <- function(
-  data,
-  y_column = 'flipper_length_mm',  
-  x_column = 'body_mass_g',
-  title    = 'Largo de aleta vs. Masa corporal',
-  xlabel   = 'Largo de aleta (mm)',
-  ylabel   = 'Masa corporal (g)',
-  se       = TRUE
-) {
-  ggplot(data, aes(x=!!sym(x_column), y=!!sym(y_column))) + 
-    geom_point() +
-    geom_smooth(method=lm, formula = y ~ x, se = se) +
-    ggtitle(title) +
-    xlab(xlabel) +
-    ylab(ylabel)
-}
-
-
-
 plot_fit <- function(
   model,
   test_set, 
@@ -195,13 +175,13 @@ plot_compare_fit <- function(
   model_2,
   df_inputs_1,
   df_inputs_2 = NULL, 
-  y_column    = 'body_mass_g',  
-  x_column    = 'flipper_length_mm',
+  x_column    = 'body_mass_g',
+  y_column    = 'flipper_length_mm',
   label_1     = 'Modelo 1',
   label_2     = 'Modelo 2',
-  title       = 'Largo de aleta vs. Masa corporal',
-  xlabel      = 'Largo de aleta (mm)',
-  ylabel      = 'Masa corporal (g)',
+  title       = 'Masa corporal vs. Longitug de la aleta',
+  xlabel      = 'Masa corporal (g)',
+  ylabel      = 'longitud de la aleta (mm)',
   se          = TRUE
 ) {
   if(is.null(df_inputs_2)) {
@@ -216,8 +196,8 @@ plot_compare_fit <- function(
   
   ggplot(df) + 
     geom_point(aes(x=!!sym(x_column), y=!!sym(y_column)), color='black') + 
-    geom_smooth(aes(x=!!sym(x_column),  y=y_pre_1, colour = Modelo), method='lm', formula = y ~ x, se = se) + 
-    geom_smooth(aes(x=!!sym(x_column),  y=y_pre_2, colour = label_2), method='lm', formula = y ~ x, se = se) +
+    geom_smooth(aes(x=y_pre_1, y=!!sym(y_column), colour = Modelo), method='lm', formula = y ~ x, se = se) + 
+    geom_smooth(aes(x=y_pre_2, y=!!sym(y_column), colour = label_2), method='lm', formula = y ~ x, se = se) +
     scale_colour_manual(values=c("blue","red")) +
     ggtitle(title) +
     xlab(xlabel) +
@@ -225,3 +205,19 @@ plot_compare_fit <- function(
   
 }
 
+plot_data <- function(
+  data,
+  x_column = 'body_mass_g',
+  y_column = 'flipper_length_mm',
+  title    = 'Masa corporal vs. Longitug de la aleta',
+  xlabel   = 'Masa corporal (g)',
+  ylabel   = 'longitud de la aleta (mm)',
+  se       = TRUE
+) {
+  ggplot(data, aes(x=!!sym(x_column), y=!!sym(y_column))) + 
+    geom_point() +
+    geom_smooth(method=lm, formula = y ~ x, se = se) +
+    ggtitle(title) +
+    xlab(xlabel) +
+    ylab(ylabel)
+}

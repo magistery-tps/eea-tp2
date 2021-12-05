@@ -450,15 +450,13 @@ plot_data(train_set)
 ```{r fig.align='center', fig.height=3, fig.width=5, message=FALSE, warning=FALSE, fig.align='center'}
 train_set_with_outliers <- train_set %>%
   mutate(flipper_length_mm = ifelse(
-    body_mass_g > 5600 , 
+    body_mass_g > 4900 & body_mass_g < 5000, 
     flipper_length_mm + (flipper_length_mm * runif(1, 0.1, 0.2)), 
     flipper_length_mm
   ))
 
 plot_data(train_set_with_outliers)
 ```
-
-En este gráfico se aprecia que para valores de masa corporal mayores a 5600 gramos aumentamos el largo de la aleta con valores atípicos. Es decir valores que se alejan del comportamiento normal de la variable.
 
 ### 2. Modelo lineal
 
@@ -470,7 +468,7 @@ lineal_model_3 <- lm(
 ```
 
 
-Comparemos el ajuste del modelo lineal ajustando en un dataset de train con y son outliers:
+Comparemos el ajuste del modelo lineal ajustando en un dataset de train con y sin outliers:
 
 ```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 plot_compare_fit(
@@ -482,13 +480,12 @@ plot_compare_fit(
 )
 ```
  
- ¿Y los coeficientes?
+Se aprecia que el modelo entrenado en el train set outliers esta apalancado por las observaciones atipicas.
 
-```{r}
-lm_vs_lm_coeficients(lineal_model_1, lineal_model_3) 
-```
 
 ### 2. Modelo lineal Robusto
+
+Entrenamos una regresión lineal múltiple robusta para intentar de disminuir el efecto de los nuevos outliers.
 
 ```{r}
 p_load(MASS)
@@ -501,7 +498,7 @@ robust_lineal_model_3 <- rlm(
 
 ```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 plot_compare_fit(
-  lineal_model_3, 
+  lineal_model_1, 
   robust_lineal_model_3, 
   train_set_with_outliers,
   label_1='Regresión Lineal SIN outliers', 
@@ -509,9 +506,19 @@ plot_compare_fit(
 )
 ```
 
+Gráficamente no se llega a distinguir pero el modelo robusto termina ajustando mejor que el modelo lineal clásico. Esto se puede observar cuando comparamos el RMSE/MAE sobre train.
+
+
 ```{r}
-lm_vs_lm_coeficients(lineal_model_1, robust_lineal_model_3) 
+lm_vs_lm_models_validation(lineal_model_3, robust_lineal_model_3, train_set_with_outliers)
 ```
+
+Mas alla de esto el modelo clasico sigue dando mejores resultado en test:
+
+```{r}
+lm_vs_lm_models_validation(lineal_model_3, robust_lineal_model_3, test_set)
+```
+
 
 ### 3. Modelo bayesiano
 
