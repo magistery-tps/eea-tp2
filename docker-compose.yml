@@ -1,0 +1,12 @@
+version: '2'
+services:
+  rstudio:
+    build: .
+    container_name: rstudio-server
+    environment:
+      - PASSWORD=1234
+    ports:
+      - 8787:8787
+    volumes:
+      - ~:/home/rstudio
+    restart: always

@@ -39,7 +39,7 @@ Se importan las librerías a utilizar a lo largo de la notebook:
 # ------------------------------------------------------------------
 # Instalar la herramienta pacman
 # ------------------------------------------------------------------
-# install.packages(pacman)   # <----
+# install.packages('pacman')   # <----
 # ------------------------------------------------------------------
 #
 #
@@ -64,6 +64,8 @@ p_load(tidyverse, tidymodels, rsample, rstan, shinystan, rstanarm, devtools)
 source('../src/dataset.R')
 source('../src/plot.R')
 source('../src/model.R')
+
+rstan_options(javascript = FALSE)
 ```
 
 # Dataset y Analisis Exploratorio
@@ -230,7 +232,7 @@ summary(lineal_model_1)
 ### 3. Modelo bayesiano
 
 ```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
-bayesion_model_1 <- stan(
+bayesion_model_1 <- rstan::stan(
   model_code =  "
     data {
       int<lower=1>               obs_count;

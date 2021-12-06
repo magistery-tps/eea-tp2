@@ -8,7 +8,9 @@
 
 ## Requisitos
 
-* Git
+* docker (Opcional)
+* docker-compose (Opcional) 
+* git
 * R/R Studio
 
 ## Comenzando
@@ -37,3 +39,19 @@ install.packages('pacman')
 [pacman](https://github.com/trinker/pacman) instala y carga los paquetes mediante la funcion `p_load` por no es necesario preocuparse en instalar las librerias.
 
 Finalmente es importante aclarar que el dataset ya esta incluido en el proyecto.
+
+## Levatar rstudio-server en docker
+
+**Paso 1**:  Sobre la raiz de proyecto ejecutar:
+```bash
+$ docker-compose up
+```
+
+**Paso 2**: Ir a http://localhost:8787
+
+**Paso 3**: Iniciar session con el siguiente usuario:
+
+* Username: rstudio
+* Password: 1234
+
+
