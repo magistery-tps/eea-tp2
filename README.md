@@ -40,7 +40,7 @@ install.packages('pacman')
 
 Finalmente es importante aclarar que el dataset ya esta incluido en el proyecto.
 
-## Levatar rstudio-server en docker
+## Iniciar rstudio-server en docker
 
 **Paso 1**:  Sobre la raiz de proyecto ejecutar:
 ```bash
