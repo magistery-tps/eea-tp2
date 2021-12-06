@@ -16,10 +16,11 @@ output:
     df_print: paged
 ---
 
-### Adrian Marino
+### Equipo
 
-### Claudio Collado
+-   **Adrian Noberto Marino**
 
+-   **Claudio Collado**
 
 # Inicialización
 
@@ -29,7 +30,6 @@ Fijamos la semilla para poder reproducir los experimentos. También se fija el n
 set.seed(42)
 options(mc.cores = 24)
 ```
-
 
 # Librerias
 
@@ -56,9 +56,7 @@ source('../src/model.R')
 
 [Palmer Penguins](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-07-28/readme.md)
 
-
 ## 1. Lectura del dataset
-
 
 ```{r message=FALSE, warning=FALSE}
 dataset <- load_dataset() %>% mutate_if(is.character, as.factor)
@@ -66,25 +64,23 @@ dataset <- load_dataset() %>% mutate_if(is.character, as.factor)
 dataset %>% glimpse()
 ```
 
-
 ## 2. Variables
 
 Se enumeran y describen breve-mente cada variable que forma parte del dataset:
 
 Variables Numéricas:
 
-* **bill_length_mm**: Longitud del pico del individuo medida en milímetros (también conocida como longitud del culmen).
-* **bill_depth_mm**: Profundidad del pico del individuo medida en milímetros (también conocida como profundidad del culmen).
-* **flipper_length_mm**: Longitud de la aleta del individuo medida en milímetros.
-* **body_mass_g**: Masa corporal del individuo medida en gramos.
-* **year**: Año en el que se registra el individuo.
+-   **bill_length_mm**: Longitud del pico del individuo medida en milímetros (también conocida como longitud del culmen).
+-   **bill_depth_mm**: Profundidad del pico del individuo medida en milímetros (también conocida como profundidad del culmen).
+-   **flipper_length_mm**: Longitud de la aleta del individuo medida en milímetros.
+-   **body_mass_g**: Masa corporal del individuo medida en gramos.
+-   **year**: Año en el que se registra el individuo.
 
 Variables Categóricas:
 
-* **species**: Especie del individuo (Adelie, Gentoo ;) o Chinstrap).
-* **sex**: Sexo del individuo.
-* **island**: Isla donde se encontré el individuo (Biscoe, Dream o Torgersen).
-
+-   **species**: Especie del individuo (Adelie, Gentoo ;) o Chinstrap).
+-   **sex**: Sexo del individuo.
+-   **island**: Isla donde se encontré el individuo (Biscoe, Dream o Torgersen).
 
 ## 3. Resumen de faltantes
 
@@ -98,15 +94,13 @@ missings_summary(dataset)
 hist_plots(dataset)
 ```
 
-
 **Observaciones**
 
-* Se aprecia que cada año se registro prácticamente el mismo numero de individuos.
-* La distribución de la masa corporal de los individuos tiene una asimétrica positiva. Tenemos muchos individuos con valores bajos de masa corporal, con una media de 192 gramos. Luego tenemos menos individuos con valores mas alto.
-* La longitud de la aleta parece ser una distribución bi-modal. Tenemos dos modas una 192 mm y otra en 215 mm.
-* La longitud del pico también parece tener una ligera simetría positiva. Es decir que lo individuos con menor peso tiene pico mas pequeños.
-* Por otro lado la profundidad de pico parece tener una ligera simetría positiva.
-
+-   Se aprecia que cada año se registro prácticamente el mismo numero de individuos.
+-   La distribución de la masa corporal de los individuos tiene una asimétrica positiva. Tenemos muchos individuos con valores bajos de masa corporal, con una media de 192 gramos. Luego tenemos menos individuos con valores mas alto.
+-   La longitud de la aleta parece ser una distribución bi-modal. Tenemos dos modas una 192 mm y otra en 215 mm.
+-   La longitud del pico también parece tener una ligera simetría positiva. Es decir que lo individuos con menor peso tiene pico mas pequeños.
+-   Por otro lado la profundidad de pico parece tener una ligera simetría positiva.
 
 ```{r fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 
@@ -127,11 +121,9 @@ p4<-ggplot(dataset, aes(y=body_mass_g)) +
 p1 + p2 + p3 + p4
 ```
 
-
 **Observaciones**
 
-* No se observan outliers univariados
-
+-   No se observan outliers univariados
 
 ### Outliers
 
@@ -141,11 +133,9 @@ No se registran valores mas extremos que el mínimo y máximo valor en cada vari
 outliers(dataset, column='bill_length_mm')
 ```
 
-
 ```{r, fig.show='hide'}
 outliers(dataset, column='bill_length_mm')
 ```
-
 
 ```{r, fig.show='hide'}
 outliers(dataset, column='bill_depth_mm')
@@ -165,11 +155,9 @@ bar_plots(dataset)
 
 **Observaciones**
 
-* La variable sexo se encuentra balanceada. Por otro lado, contiene algunos valores faltantes.
-* La variable island esta completamente desbalanceada. Esto seguramente se debe a una diferencia en numero
-en las poblaciones en cada isla o a un sesgo al momento de registrar los individuos. Es decir que registramos con individuos en una isla que en otra.
-* Lo mismo sucede con las especies de individuos. Vemos un gran desbalance entre la especie Chinstrap vs. otra especies. Por otro aldo Adelie y Gentoo tiene un conteo mas cercano
-
+-   La variable sexo se encuentra balanceada. Por otro lado, contiene algunos valores faltantes.
+-   La variable island esta completamente desbalanceada. Esto seguramente se debe a una diferencia en numero en las poblaciones en cada isla o a un sesgo al momento de registrar los individuos. Es decir que registramos con individuos en una isla que en otra.
+-   Lo mismo sucede con las especies de individuos. Vemos un gran desbalance entre la especie Chinstrap vs. otra especies. Por otro aldo Adelie y Gentoo tiene un conteo mas cercano
 
 ## 5. Excluir observaciones con missings
 
@@ -192,20 +180,17 @@ segmented_pairs_plot(dataset, segment_column='species')
 
 ## Experimento 1
 
-* Solo variables numéricas.
-* Regresión múltiple frecuentista.
-* Regresión múltiple bayesiana con priors normales y exponencial.
-
+-   Solo variables numéricas.
+-   Regresión múltiple frecuentista.
+-   Regresión múltiple bayesiana con priors normales y exponencial.
 
 ### 1. Split train vs. test
-
 
 ```{r message=FALSE, warning=FALSE}
 train_test <- train_test_split(dataset, train_size = 0.7, shuffle = TRUE)
 train_set <- train_test[[1]]
 test_set  <- train_test[[2]]
 ```
-
 
 ### 2. Modelo lineal
 
@@ -225,7 +210,6 @@ lineal_model_1 <- lm(body_mass_g ~ flipper_length_mm, data = train_set)
 
 summary(lineal_model_1)
 ```
-
 
 ### 3. Modelo bayesiano
 
@@ -267,7 +251,6 @@ params_1 <- c('beta0', 'beta1', 'sigma')
 traceplot(bayesion_model_1, pars = params_1, inc_warmup = TRUE)
 ```
 
-
 ### 4. Coeficientes
 
 ```{r}
@@ -275,7 +258,6 @@ lm_vs_br_coeficients(lineal_model_1, bayesion_model_1, params_1)
 ```
 
 ### 4. Validación
-
 
 ```{r}
 vars_1 <- c('flipper_length_mm') 
@@ -295,16 +277,13 @@ plot_compare_fit(
 )
 ```
 
-
 ## Experimento 2
 
-* Idem a experimento 1, incorporando una variable categórica.
-* Regresión múltiple frecuentista.
-* Regresión bayesiana con priors normales y exponencial.
-
+-   Idem a experimento 1, incorporando una variable categórica.
+-   Regresión múltiple frecuentista.
+-   Regresión bayesiana con priors normales y exponencial.
 
 ### 1. Modelo lineal
-
 
 ```{r}
 lineal_model_2 <- lm(
@@ -334,7 +313,7 @@ lineal_model_2 <- lm(
 summary(lineal_model_2)
 ```
 
-### 2.  Modelo bayesiano
+### 2. Modelo bayesiano
 
 Construimos una matriz con todas las variables(X) mas el intercept:
 
@@ -354,7 +333,6 @@ test_X  <- test_set %>% to_model_input()
 
 head(train_X)
 ```
-
 
 Definimos y corremos el modelo bayesiano:
 
@@ -400,7 +378,6 @@ params_2 <- c('beta[1]', 'beta[2]', 'beta[3]', 'beta[4]', 'sigma')
 traceplot(bayesion_model_2, inc_warmup = TRUE, pars = params_2)
 ```
 
-
 ### 3. Coeficientes
 
 ```{r}
@@ -439,21 +416,17 @@ plot_compare_fit(
 )
 ```
 
-
-
-
 ## Experimento 3
 
-* Idem a experimento 1 incorporando outliers en alguna variable numérica.
-* Regresión múltiple frecuentista.
-* Regresión bayesiana con priors normales y exponencial.
-
+-   Idem a experimento 1 incorporando outliers en alguna variable numérica.
+-   Regresión múltiple frecuentista.
+-   Regresión bayesiana con priors normales y exponencial.
 
 ### 1. Outliers
 
-A continuación vamos a agregar outliers a la variable **flipper_length_mm**, la cual define la longitud de la aleta del individuo medida en milímetros. 
+A continuación vamos a agregar outliers a la variable **flipper_length_mm**, la cual define la longitud de la aleta del individuo medida en milímetros.
 
-Para visualizar los nuevos outliers a continuación graficamos **flipper_length_mm** vs.  **body_mass_g** antes y después de agregar outliers:
+Para visualizar los nuevos outliers a continuación graficamos **flipper_length_mm** vs. **body_mass_g** antes y después de agregar outliers:
 
 ```{r fig.align='center', fig.height=3, fig.width=5, message=FALSE, warning=FALSE, fig.align='center'}
 plot_data(train_set)
@@ -480,7 +453,6 @@ lineal_model_3 <- lm(
 summary(lineal_model_3)
 ```
 
-
 Comparemos el ajuste del modelo lineal ajustando en un dataset de train con y sin outliers:
 
 ```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
@@ -492,7 +464,7 @@ plot_compare_fit(
   label_2='Regresión Lineal CON outliters'
 )
 ```
- 
+
 Se aprecia que el modelo entrenado en **train_set_outliers** esta apalancado por las observaciones atípicas
 
 ### 2. Modelo lineal Robusto
@@ -506,7 +478,6 @@ robust_lineal_model_3 <- rlm(
 )
 ```
 
-
 ```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 plot_compare_fit(
   lineal_model_1, 
@@ -519,19 +490,15 @@ plot_compare_fit(
 
 Gráficamente no se llega a distinguir pero el modelo robusto termina ajustando mejor que el modelo lineal clásico. Esto se puede observar cuando comparamos el RMSE/MAE sobre train y test.
 
-
 ```{r}
 lm_vs_lm_models_validation(lineal_model_3, robust_lineal_model_3, train_set_with_outliers)
 ```
-
 
 ```{r}
 lm_vs_lm_models_validation(lineal_model_3, robust_lineal_model_3, test_set)
 ```
 
-
 ### 3. Modelo bayesiano con Likelihood normal
-
 
 ```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 bayesion_model_3 <- stan(
@@ -571,7 +538,6 @@ params_3 <- c('beta0', 'beta1', 'sigma')
 traceplot(bayesion_model_3, pars = params_3, inc_warmup = TRUE)
 ```
 
-
 ### 4. Coeficientes
 
 ```{r}
@@ -579,7 +545,6 @@ lm_vs_br_coeficients(robust_lineal_model_3, bayesion_model_3, params_3)
 ```
 
 ### 5. Validación
-
 
 ```{r}
 vars_3 <- c('flipper_length_mm') 
@@ -599,9 +564,7 @@ plot_compare_fit(
 )
 ```
 
-
 ### 6. Modelo bayesiano con Likelihood t-student
-
 
 ```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 bayesion_model_3.1 <- stan(
@@ -649,7 +612,6 @@ lm_vs_br_coeficients(lineal_model_1, bayesion_model_3.1, params_3)
 
 ### 8. Validación
 
-
 ```{r}
 vars_3 <- c('flipper_length_mm') 
 
@@ -670,11 +632,9 @@ plot_compare_fit(
 
 ## Experimento 4
 
-
-* Idem experimento 1 pero reduciendo la cantidad de observaciones a pocos valores (ej:30).
-* Regresión múltiple frecuentista.
-* Regresión bayesiana con priors normales y exponencial.
-
+-   Idem experimento 1 pero reduciendo la cantidad de observaciones a pocos valores (ej:30).
+-   Regresión múltiple frecuentista.
+-   Regresión bayesiana con priors normales y exponencial.
 
 ### 1. Split train - test
 
@@ -743,7 +703,6 @@ traceplot(bayesion_model_4, pars = params_4, inc_warmup = TRUE)
 
 Coeficientes de la regresión múltiple:
 
-
 ```{r}
 lineal_model_4$coefficients
 ```
@@ -754,9 +713,7 @@ Coeficientes descubiertos por la regresión múltiple bayesiana:
 for(param in params_4) print(get_posterior_mean(bayesion_model_4, par=param)[4])
 ```
 
-
 ### 5. Validación
-
 
 ```{r}
 vars_4 <- c('flipper_length_mm') 
@@ -776,13 +733,14 @@ plot_compare_fit(
 )
 ```
 
-
 ## Experimento 5
 
-* Igual al experimento 1 pero proponiendo dos nuevas regresiones bayesianas con priors para los parámetros que sean:
-  * Una poca informativa (uniforme).
-  * Una muy informativa (sesgada o con muy poca varianza).
-* Comparar con resultados de la bayesiana del experimento A
+-   Igual al experimento 1 pero proponiendo dos nuevas regresiones bayesianas con priors para los parámetros que sean:
+
+    -   Una poca informativa (uniforme).
+    -   Una muy informativa (sesgada o con muy poca varianza).
+
+-   Comparar con resultados de la bayesiana del experimento A
 
 ### 1. Modelo bayesiano con parametro con distribucion poco informativa
 
@@ -828,9 +786,7 @@ params_5a <- c('beta0', 'beta1', 'sigma')
 traceplot(bayesion_model_5a, pars = params_5a, inc_warmup = TRUE)
 ```
 
-
 #### 2. Coeficientes
-
 
 ```{r}
 br_vs_br_coeficients(bayesion_model_1, bayesion_model_5a, params_5a)
@@ -897,12 +853,13 @@ bayesion_model_5b <- stan(
 params_5b <- c('beta0', 'beta1', 'sigma')
 traceplot(bayesion_model_5b, pars = params_5b, inc_warmup = TRUE)
 ```
-#### 2. Coeficientes
 
+#### 2. Coeficientes
 
 ```{r}
 br_vs_br_coeficients(bayesion_model_5a, bayesion_model_5b,params_5a)
 ```
+
 #### 3. Validacion
 
 ```{r}
@@ -924,9 +881,10 @@ plot_compare_fit(
 )
 ```
 
-
 ## Referencias
 
-* [Making Predictions from Stan models in R](https://medium.com/@alex.pavlakis/making-predictions-from-stan-models-in-r-3e349dfac1ed)
-* [How to represent a categorical predictor rstan?](https://stackoverflow.com/questions/29183577/how-to-represent-a-categorical-predictor-rstan)
-
+-   Notebooks de la materia **Enfoque estadistico del aprendizaje**.
+-   [Making Predictions from Stan models in R](https://medium.com/@alex.pavlakis/making-predictions-from-stan-models-in-r-3e349dfac1ed)
+-   [Stan User's Guide](https://mc-stan.org/docs/2_28/stan-users-guide/index.html)
+-   [How to represent a categorical predictor rstan?](https://stackoverflow.com/questions/29183577/how-to-represent-a-categorical-predictor-rstan)
+-   [Palmer Penguins](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-07-28/readme.md)
