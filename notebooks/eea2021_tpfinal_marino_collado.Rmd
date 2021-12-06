@@ -36,9 +36,25 @@ options(mc.cores = 24)
 Se importan las librerías a utilizar a lo largo de la notebook:
 
 ```{r message=FALSE, warning=FALSE}
-# install.packages(pacman)
-# install.packages("https://cran.r-project.org/src/contrib/rstan_2.21.2.tar.gz",repos = NULL,type="source")
+# ------------------------------------------------------------------
+# Instalar la herramienta pacman
+# ------------------------------------------------------------------
+# install.packages(pacman)   # <----
+# ------------------------------------------------------------------
+#
+#
+#
+# ------------------------------------------------------------------
+# Requerido si se corre rstudio-server con docker 
+# ------------------------------------------------------------------
+# install.packages(
+#  "https://cran.r-project.org/src/contrib/rstan_2.21.2.tar.gz",
+#   repos = NULL,
+#   type="source"
+#  )
+# 
 # sudo apt-get install libglpk-dev
+# ------------------------------------------------------------------
 ```
 
 ```{r message=FALSE, warning=FALSE}
@@ -888,3 +904,4 @@ plot_compare_fit(
 -   [Stan User's Guide](https://mc-stan.org/docs/2_28/stan-users-guide/index.html)
 -   [How to represent a categorical predictor rstan?](https://stackoverflow.com/questions/29183577/how-to-represent-a-categorical-predictor-rstan)
 -   [Palmer Penguins](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-07-28/readme.md)
+-   [Using the rocker/rstudio container](https://hub.docker.com/r/rocker/rstudio)
