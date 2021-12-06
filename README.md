@@ -1,4 +1,4 @@
-# UBA - Maestria en Explotación de Datos y Descubrimiento de Conocimiento - Enfoque Estadistico del Aprendizaje
+# UBA - Exactas - Maestria en Explotación de Datos y Descubrimiento de Conocimiento - Enfoque Estadistico del Aprendizaje
 
 ## Trabajo practico Final: Regression Bayesiana
 
