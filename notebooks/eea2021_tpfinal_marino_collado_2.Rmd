@@ -109,13 +109,28 @@ hist_plots(dataset)
 
 
 ```{r fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
-box_plots(dataset)
+
+library(patchwork)
+
+p1<-ggplot(dataset, aes(y=bill_depth_mm)) +
+  geom_boxplot(fill="coral") + ggtitle("bill_depth") + theme(plot.title = element_text(hjust = 0.5))
+
+p2<-ggplot(dataset, aes(y=bill_length_mm)) +
+  geom_boxplot(fill="dodgerblue") + ggtitle("bill_length") + theme(plot.title = element_text(hjust = 0.5))
+
+p3<-ggplot(dataset, aes(y=flipper_length_mm)) +
+  geom_boxplot(fill="seagreen3")+ ggtitle("flipper_depth") + theme(plot.title = element_text(hjust = 0.5))
+
+p4<-ggplot(dataset, aes(y=body_mass_g)) +
+  geom_boxplot(fill = "pink1") + ggtitle("body_mass") + theme(plot.title = element_text(hjust = 0.5))
+
+p1 + p2 + p3 + p4
 ```
 
 
 **Observaciones**
 
-* COMPLETAR
+* No se observan outliers univariados
 
 
 ### Outliers
@@ -143,12 +158,6 @@ outliers(dataset, column='flipper_length_mm')
 ```{r, fig.show='hide'}
 outliers(dataset, column='body_mass_g')
 ```
-
-
-```{r, fig.show='hide'}
-outliers(dataset, column='year')
-```
-
 
 ```{r fig.height=3, fig.width=3, warning=FALSE}
 bar_plots(dataset)
@@ -721,7 +730,7 @@ bayesion_model_4 <- stan(
       y  = colvalues(train_set_4, 'body_mass_g')
   ),
   chains = 3,
-  iter   = 300,
+  iter   = 1000,
   warmup = 180,
   thin   = 1
 )
@@ -761,7 +770,7 @@ bayesion_predictor_4 <- BayesianRegressionPredictor.from(bayesion_model_4, param
 plot_compare_fit(
   lineal_model_4,
   bayesion_predictor_4, 
-  train_set,
+  train_set_4,
   label_1='Regresion Lineal', 
   label_2='Regresion Bayesiana'
 )
@@ -779,9 +788,9 @@ plot_compare_fit(
 
 #### 1. Modelo
 
-Definimos una [distribución uniforme](https://mc-stan.org/docs/2_21/functions-reference/uniform-distribution.html) para el beta asociado a la variable **flipper_length_mm**.
+Definimos una [distribución uniforme](https://mc-stan.org/docs/2_21/functions-reference/uniform-distribution.html) para el beta asociado a la variable **flipper_length_mm** y el intercepto
 
-```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center', echo=FALSE}
+```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 bayesion_model_5a <- stan(
   model_code =  "
     data {
@@ -847,11 +856,11 @@ plot_compare_fit(
 )
 ```
 
-### 2. Modelo bayesiano con parametro con distribucion muy informativa sesgada o con poca varianza
+### 2. Modelo bayesiano con parametro con distribucion muy informativa
 
 Para las distribuciones de los parametros (priors) indicamos una distribucion normal informativa tomando los valores de la media y el desvio como aquellos encontrados en los experimentos anteriores:
 
-```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center', echo=FALSE}
+```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
 bayesion_model_5b <- stan(
   model_code =  "
     data {
