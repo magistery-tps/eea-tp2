@@ -85,11 +85,6 @@ Variables Categóricas:
 * **sex**: Sexo del individuo.
 * **island**: Isla donde se encontré el individuo (Biscoe, Dream o Torgersen).
 
-A continuación veamos los posibles valores de las variables categóricas:
-
-```{r}
-show_values(dataset %>% select_if(negate(is.numeric)))
-```
 
 ## 3. Resumen de faltantes
 
@@ -210,7 +205,18 @@ lineal_model_1 <- lm(
   body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
   data = train_set
 )
+
+summary(lineal_model_1)
 ```
+
+Quitamos los coeficientes que no son significativos para explicar a la variable **body_mass_g**:
+
+```{r}
+lineal_model_1 <- lm(body_mass_g ~ flipper_length_mm, data = train_set)
+
+summary(lineal_model_1)
+```
+
 
 ### 3. Modelo bayesiano
 
@@ -219,36 +225,28 @@ bayesion_model_1 <- stan(
   model_code =  "
     data {
       int<lower=1>               obs_count;
-      vector<lower=1>[obs_count] x1;
-      vector<lower=1>[obs_count] x2;
-      vector<lower=1>[obs_count] x3;
+      vector<lower=1>[obs_count] x;
       vector[obs_count]          y;
     }
     parameters {
       real          beta0;
       real          beta1;
-      real          beta2;
-      real          beta3;
       real<lower=0> sigma;
     }
     model {
-      // Distribuciones a priori 
-      beta0 ~ normal(0, 8000  /* Fijado por el investigador */ ); // Intercept
-      beta1 ~ normal(0, 100   /* Fijado por el investigador */);
-      beta2 ~ normal(0, 100   /* Fijado por el investigador */);
-      beta3 ~ normal(0, 100   /* Fijado por el investigador */);
-      sigma ~ exponential(0.1 /* Fijado por el investigador */);
+      // Distribuciones a priori (Fijado por el investigador)
+      beta0 ~ normal(0, 8000);  // Intercept
+      beta1 ~ normal(0, 100);   // flipper_length_mm
+      sigma ~ exponential(0.1); // Varianza
 
-      // Likelihood    
-      y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
+      // Likelihood
+      y ~ normal(beta0 + beta1 * x, sigma);
     }
   ",
   data = list(
       obs_count = nrow(train_set),
-      y  = colvalues(train_set, 'body_mass_g'),
-      x1 = colvalues(train_set, 'bill_length_mm'),
-      x2 = colvalues(train_set, 'bill_depth_mm'),
-      x3 = colvalues(train_set, 'flipper_length_mm')
+      x         = colvalues(train_set, 'flipper_length_mm'),
+      y         = colvalues(train_set, 'body_mass_g')
   ),
   chains = 3,
   iter   = 300,
@@ -256,7 +254,7 @@ bayesion_model_1 <- stan(
   thin   = 1
 )
 
-params_1 <- c('beta0', 'beta1', 'beta2', 'beta3', 'sigma')
+params_1 <- c('beta0', 'beta1', 'sigma')
 traceplot(bayesion_model_1, pars = params_1, inc_warmup = TRUE)
 ```
 
@@ -271,7 +269,7 @@ lm_vs_br_coeficients(lineal_model_1, bayesion_model_1, params_1)
 
 
 ```{r}
-vars_1 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
+vars_1 <- c('flipper_length_mm') 
 
 lm_vs_br_models_validation(lineal_model_1, bayesion_model_1, params_1, vars_1, test_set)
 ```
@@ -283,8 +281,8 @@ plot_compare_fit(
   lineal_model_1, 
   bayesion_predictor_1, 
   train_set,
-  label_1='Regresion Lineal', 
-  label_2='Regresion Bayesiana'
+  label_1 = 'Regresion Lineal', 
+  label_2 = 'Regresion Bayesiana'
 )
 ```
 
@@ -309,21 +307,25 @@ lineal_model_2 <- lm(
 
   data = train_set
 )
+
+summary(lineal_model_2)
+```
+
+Quitamos los coeficientes que no son significativos para explicar a la variable **body_mass_g**:
+
+```{r}
+lineal_model_2 <- lm(
+    body_mass_g 
+      ~ bill_depth_mm
+      + flipper_length_mm
+      + sex,
+  data = train_set
+)
+
+summary(lineal_model_2)
 ```
 
 ### 2.  Modelo bayesiano
-
-Antes que nada transformamos la columna categórica a one-hot encoding:
-
-```{r}
-cat_cols <- c('sex')
-
-train_set_cat <- train_set %>% dummify(cat_cols)
-test_set_cat  <- test_set  %>% dummify(cat_cols)
-
-train_set_cat
-```
-
 
 Construimos una matriz con todas las variables(X) mas el intercept:
 
@@ -331,18 +333,17 @@ Construimos una matriz con todas las variables(X) mas el intercept:
 to_model_input <- function(df) {
   model.matrix(
     body_mass_g 
-      ~ bill_length_mm
-      + bill_depth_mm
+      ~ bill_depth_mm
       + flipper_length_mm
-      + sex_female
-      + sex_male,
-
+      + sex,
     data = df
   )
 }
 
-train_X <- train_set_cat %>% to_model_input()
-test_X  <- test_set_cat %>% to_model_input()
+train_X <- train_set %>% to_model_input()
+test_X  <- test_set %>% to_model_input()
+
+head(train_X)
 ```
 
 
@@ -363,18 +364,12 @@ bayesion_model_2 <- stan(
     }
     model {
       // Distribuciones a priori
-      beta[1] ~ normal(0, 2000); // Intecept
+      beta[1] ~ normal(0, 3000); // Intecept = beta0 + sexfemale
+      beta[2] ~ normal(0, 200);  // bill_depth_mm
+      beta[3] ~ normal(0, 200);  // flipper_length_mm
+      beta[4] ~ normal(0, 600);  // sexmale
   
-      // Variables numericas
-      beta[2] ~ normal(0, 30);
-      beta[3] ~ normal(0, 100);
-      beta[4] ~ normal(0, 100);
-  
-      // Sexo
-      beta[5] ~ normal(0, 100);
-      beta[6] ~ normal(0, 100);
-  
-      sigma ~ exponential(0.1);
+      sigma ~ exponential(0.1);  // Varianza
   
       // Likelihood
       y ~ normal(X * beta, sigma);
@@ -383,16 +378,16 @@ bayesion_model_2 <- stan(
   data = list(
       obs_count  = dim(train_X)[1],
       coef_count = dim(train_X)[2],
-      y          = colvalues(train_set_cat, 'body_mass_g'),
+      y          = colvalues(train_set, 'body_mass_g'),
       X          = train_X
   ),
   chains = 3,
-  iter   = 300,
-  warmup = 180,
+  iter   = 4000,
+  warmup = 500,
   thin   = 1
 )
 
-params_2 <- c('beta[1]', 'beta[2]', 'beta[3]', 'beta[4]', 'beta[5]', 'beta[6]', 'sigma')
+params_2 <- c('beta[1]', 'beta[2]', 'beta[3]', 'beta[4]', 'sigma')
 traceplot(bayesion_model_2, inc_warmup = TRUE, pars = params_2)
 ```
 
@@ -410,15 +405,15 @@ br_coeficients(bayesion_model_2, params_2)
 ### 4. Validación
 
 ```{r}
-vars_2 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'sex_female','sex_male')
+vars_2 <- c('bill_depth_mm', 'flipper_length_mm', 'sexmale')
 
 lm_vs_br_models_validation(
   lineal_model_2, 
   bayesion_model_2, 
   params_2,
   vars_2,
-  test_set, 
-  test_set_cat
+  test_set,
+  as.data.frame(test_X)
 )
 ```
 
@@ -429,11 +424,14 @@ plot_compare_fit(
   lineal_model_2, 
   bayesion_predictor_2, 
   test_set, 
-  test_set_cat,
-  label_1='Regresion Lineal', 
-  label_2='Regresion Bayesiana'
+  as.data.frame(test_X),
+  label_1 = 'Regresion Lineal', 
+  label_2 = 'Regresion Bayesiana'
 )
 ```
+
+
+
 
 ## Experimento 3
 
@@ -455,7 +453,7 @@ plot_data(train_set)
 ```{r fig.align='center', fig.height=3, fig.width=5, message=FALSE, warning=FALSE, fig.align='center'}
 train_set_with_outliers <- train_set %>%
   mutate(flipper_length_mm = ifelse(
-    body_mass_g > 4900 & body_mass_g < 5000, 
+    body_mass_g > 5400 & body_mass_g < 5700, 
     flipper_length_mm + (flipper_length_mm * runif(1, 0.1, 0.2)), 
     flipper_length_mm
   ))
@@ -467,9 +465,10 @@ plot_data(train_set_with_outliers)
 
 ```{r}
 lineal_model_3 <- lm(
-  body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
+  body_mass_g ~ flipper_length_mm,
   data = train_set_with_outliers
 )
+summary(lineal_model_3)
 ```
 
 
@@ -485,16 +484,15 @@ plot_compare_fit(
 )
 ```
  
-Se aprecia que el modelo entrenado en el train set outliers esta apalancado por las observaciones atipicas.
-
+Se aprecia que el modelo entrenado en **train_set_outliers** esta apalancado por las observaciones atípicas
 
 ### 2. Modelo lineal Robusto
 
-Entrenamos una regresión lineal múltiple robusta para intentar de disminuir el efecto de los nuevos outliers.
+Entrenamos una regresión lineal múltiple robusta para intentar de disminuir el efecto de los nuevos outliers:
 
 ```{r}
 robust_lineal_model_3 <- rlm(
-  body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
+  body_mass_g ~ flipper_length_mm,
   data = train_set_with_outliers
 )
 ```
@@ -510,14 +508,13 @@ plot_compare_fit(
 )
 ```
 
-Gráficamente no se llega a distinguir pero el modelo robusto termina ajustando mejor que el modelo lineal clásico. Esto se puede observar cuando comparamos el RMSE/MAE sobre train.
+Gráficamente no se llega a distinguir pero el modelo robusto termina ajustando mejor que el modelo lineal clásico. Esto se puede observar cuando comparamos el RMSE/MAE sobre train y test.
 
 
 ```{r}
 lm_vs_lm_models_validation(lineal_model_3, robust_lineal_model_3, train_set_with_outliers)
 ```
 
-Mas alla de esto el modelo clasico sigue dando mejores resultado en test:
 
 ```{r}
 lm_vs_lm_models_validation(lineal_model_3, robust_lineal_model_3, test_set)
@@ -532,44 +529,36 @@ bayesion_model_3 <- stan(
   model_code =  "
     data {
       int<lower=1>               obs_count;
-      vector<lower=1>[obs_count] x1;
-      vector<lower=1>[obs_count] x2;
-      vector<lower=1>[obs_count] x3;
+      vector<lower=1>[obs_count] x;
       vector[obs_count]          y;
     }
     parameters {
       real          beta0;
       real          beta1;
-      real          beta2;
-      real          beta3;
       real<lower=0> sigma;
     }
     model {
-      // Distribuciones a priori
-      beta0 ~ normal(0, 8000); // Intecept
-      beta1 ~ normal(0, 100);
-      beta2 ~ normal(0, 100);
-      beta3 ~ normal(0, 100);
-      sigma ~ exponential(0.1);
-    
-      // Likelihood    
-      y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
+      // Distribuciones a priori (Fijado por el investigador)
+      beta0 ~ normal(0, 1000);  // Intercept
+      beta1 ~ normal(0, 100);   // flipper_length_mm
+      sigma ~ exponential(0.1); // Varianza
+
+      // Likelihood
+      y ~ normal(beta0 + beta1 * x, sigma);
     }
   ",
   data = list(
       obs_count = nrow(train_set_with_outliers),
-      y  = colvalues(train_set_with_outliers, 'body_mass_g'),
-      x1 = colvalues(train_set_with_outliers, 'bill_length_mm'),
-      x2 = colvalues(train_set_with_outliers, 'bill_depth_mm'),
-      x3 = colvalues(train_set_with_outliers, 'flipper_length_mm')
+      x = colvalues(train_set_with_outliers, 'flipper_length_mm'),
+      y = colvalues(train_set_with_outliers, 'body_mass_g')
   ),
   chains = 3,
-  iter   = 300,
-  warmup = 180,
+  iter   = 1000,
+  warmup = 300,
   thin   = 1
 )
 
-params_3 <- c('beta0', 'beta1', 'beta2', 'beta3', 'sigma')
+params_3 <- c('beta0', 'beta1', 'sigma')
 traceplot(bayesion_model_3, pars = params_3, inc_warmup = TRUE)
 ```
 
@@ -584,7 +573,7 @@ lm_vs_br_coeficients(robust_lineal_model_3, bayesion_model_3, params_3)
 
 
 ```{r}
-vars_3 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
+vars_3 <- c('flipper_length_mm') 
 
 lm_vs_br_models_validation(robust_lineal_model_3, bayesion_model_3, params_3, vars_3, test_set)
 ```
@@ -605,15 +594,77 @@ plot_compare_fit(
 ### 6. Modelo bayesiano con Likelihood t-student
 
 
-COMPLETAR
+```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_model_3.1 <- stan(
+  model_code =  "
+    data {
+      int<lower=1>               obs_count;
+      vector<lower=1>[obs_count] x;
+      vector[obs_count]          y;
+    }
+    parameters {
+      real          beta0;
+      real          beta1;
+      real<lower=0> sigma;
+    }
+    model {
+      // Distribuciones a priori (Fijado por el investigador)
+      beta0 ~ normal(-5700, 50);  // Intercept (Muy informativa!!!)
+      beta1 ~ normal(49, 20);      // flipper_length_mm (Muy informativa!!!)
+      sigma ~ exponential(0.1); // Varianza
 
+      // Likelihood
+      y ~ student_t(2, beta0 + beta1 * x, sigma);
+    }
+  ",
+  data = list(
+      obs_count = nrow(train_set_with_outliers),
+      x = colvalues(train_set_with_outliers, 'flipper_length_mm'),
+      y = colvalues(train_set_with_outliers, 'body_mass_g')
+  ),
+  chains = 3,
+  iter   = 1000,
+  warmup = 300,
+  thin   = 1
+)
+
+params_3 <- c('beta0', 'beta1', 'sigma')
+traceplot(bayesion_model_3.1, pars = params_3, inc_warmup = TRUE)
+```
+
+### 7. Coeficientes
+
+```{r}
+lm_vs_br_coeficients(lineal_model_1, bayesion_model_3.1, params_3)
+```
+
+### 8. Validación
+
+
+```{r}
+vars_3 <- c('flipper_length_mm') 
+
+lm_vs_br_models_validation(lineal_model_1, bayesion_model_3.1, params_3, vars_3, test_set)
+```
+
+```{r fig.align='center', fig.height=3, fig.width=8, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_predictor_3.1 <- BayesianRegressionPredictor.from(bayesion_model_3.1, params_3, vars_3)
+
+plot_compare_fit(
+  lineal_model_1, 
+  bayesion_predictor_3.1, 
+  train_set_with_outliers,
+  label_1='Regresion Lineal SIN outliers', 
+  label_2='Regresion Bayesiana CON outliers'
+)
+```
 
 ## Experimento 4
 
 
 * Idem experimento 1 pero reduciendo la cantidad de observaciones a pocos valores (ej:30).
-* Regresion multiple frecuentista.
-* Regresion bayesiana con priors normales y exponencial.
+* Regresión múltiple frecuentista.
+* Regresión bayesiana con priors normales y exponencial.
 
 
 ### 1. Split train - test
@@ -634,7 +685,7 @@ plot_data(train_set_4)
 
 ```{r}
 lineal_model_4 <- lm(
-  body_mass_g ~ bill_length_mm + bill_depth_mm + flipper_length_mm,
+  body_mass_g ~ flipper_length_mm,
   data = train_set_4
 )
 ```
@@ -646,36 +697,28 @@ bayesion_model_4 <- stan(
   model_code =  "
     data {
       int<lower=1>               obs_count;
-      vector<lower=1>[obs_count] x1;
-      vector<lower=1>[obs_count] x2;
-      vector<lower=1>[obs_count] x3;
+      vector<lower=1>[obs_count] x;
       vector[obs_count]          y;
     }
     parameters {
       real          beta0;
       real          beta1;
-      real          beta2;
-      real          beta3;
       real<lower=0> sigma;
     }
     model {
       // Distribuciones a priori
       beta0 ~ normal(0, 8000); // Intercept
       beta1 ~ normal(0, 100);
-      beta2 ~ normal(0, 100);
-      beta3 ~ normal(0, 100);
       sigma ~ exponential(0.1);
     
       // Likelihood
-      y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
+      y ~ normal(beta0 + beta1 * x, sigma);
     }
   ",
   data = list(
       obs_count = nrow(train_set_4),
-      y  = colvalues(train_set_4, 'body_mass_g'),
-      x1 = colvalues(train_set_4, 'bill_length_mm'),
-      x2 = colvalues(train_set_4, 'bill_depth_mm'),
-      x3 = colvalues(train_set_4, 'flipper_length_mm')
+      x = colvalues(train_set_4, 'flipper_length_mm'),
+      y  = colvalues(train_set_4, 'body_mass_g')
   ),
   chains = 3,
   iter   = 300,
@@ -683,7 +726,7 @@ bayesion_model_4 <- stan(
   thin   = 1
 )
 
-params_4 <- c('beta0', 'beta1', 'beta2', 'beta3', 'sigma')
+params_4 <- c('beta0', 'beta1', 'sigma')
 traceplot(bayesion_model_4, pars = params_4, inc_warmup = TRUE)
 ```
 
@@ -707,7 +750,7 @@ for(param in params_4) print(get_posterior_mean(bayesion_model_4, par=param)[4])
 
 
 ```{r}
-vars_4 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
+vars_4 <- c('flipper_length_mm') 
 
 lm_vs_br_models_validation(lineal_model_4, bayesion_model_4, params_4, vars_4, test_set)
 ```
@@ -743,36 +786,28 @@ bayesion_model_5 <- stan(
   model_code =  "
     data {
       int<lower=1>               obs_count;
-      vector<lower=1>[obs_count] x1;
-      vector<lower=1>[obs_count] x2;
-      vector<lower=1>[obs_count] x3;
+      vector<lower=1>[obs_count] x;
       vector[obs_count]          y;
     }
     parameters {
       real          beta0;
       real          beta1;
-      real          beta2;
-      real          beta3;
       real<lower=0> sigma;
     }
     model {
       // Distribuciones a priori
       beta0 ~ normal(0, 8000); // Intercept
       beta1 ~ normal(0, 100);
-      beta2 ~ normal(0, 100);
-      beta3 ~ exponential(0.1);
       sigma ~ exponential(0.5);
   
       // Likelihood
-      y ~ normal(beta0 + beta1 * x1 + beta2 * x2 + beta3 * x3, sigma);
+      y ~ normal(beta0 + beta1 * x, sigma);
     }
   ",
   data = list(
       obs_count = nrow(train_set),
-      y  = colvalues(train_set, 'body_mass_g'),
-      x1 = colvalues(train_set, 'bill_length_mm'),
-      x2 = colvalues(train_set, 'bill_depth_mm'),
-      x3 = colvalues(train_set, 'flipper_length_mm')
+      x = colvalues(train_set, 'flipper_length_mm'),
+      y  = colvalues(train_set, 'body_mass_g')
   ),
   chains = 3,
   iter   = 1000,
@@ -780,7 +815,7 @@ bayesion_model_5 <- stan(
   thin   = 1
 )
 
-params_5 <- c('beta0', 'beta1', 'beta2', 'beta3', 'sigma')
+params_5 <- c('beta0', 'beta1', 'sigma')
 traceplot(bayesion_model_5, pars = params_5, inc_warmup = TRUE)
 ```
 
@@ -801,7 +836,7 @@ lm_vs_br_models_validation(lineal_model_1, bayesion_model_1, params_1, vars_1, t
 #### 4. Validacion
 
 ```{r}
-vars_5 <- c('bill_length_mm', 'bill_depth_mm', 'flipper_length_mm') 
+vars_5 <- c('flipper_length_mm') 
 
 lm_vs_br_models_validation(lineal_model_1, bayesion_model_5, params_5, vars_5, test_set)
 ```
@@ -828,5 +863,4 @@ COMPLETAR
 
 * [Making Predictions from Stan models in R](https://medium.com/@alex.pavlakis/making-predictions-from-stan-models-in-r-3e349dfac1ed)
 * [How to represent a categorical predictor rstan?](https://stackoverflow.com/questions/29183577/how-to-represent-a-categorical-predictor-rstan)
-* [R commons](https://github.com/adrianmarino/commons)
 
