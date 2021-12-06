@@ -782,7 +782,7 @@ plot_compare_fit(
 Definimos una [distribución uniforme](https://mc-stan.org/docs/2_21/functions-reference/uniform-distribution.html) para el beta asociado a la variable **flipper_length_mm**.
 
 ```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center', echo=FALSE}
-bayesion_model_5 <- stan(
+bayesion_model_5a <- stan(
   model_code =  "
     data {
       int<lower=1>               obs_count;
@@ -796,8 +796,8 @@ bayesion_model_5 <- stan(
     }
     model {
       // Distribuciones a priori
-      beta0 ~ normal(0, 8000); // Intercept
-      beta1 ~ normal(0, 100);
+      beta0 ~ uniform(-6000, 2000); // Intercept
+      beta1 ~ uniform(-50, 50);
       sigma ~ exponential(0.5);
   
       // Likelihood
@@ -810,13 +810,13 @@ bayesion_model_5 <- stan(
       y  = colvalues(train_set, 'body_mass_g')
   ),
   chains = 3,
-  iter   = 1000,
-  warmup = 180,
+  iter   = 2000,
+  warmup = 300,
   thin   = 1
 )
 
-params_5 <- c('beta0', 'beta1', 'sigma')
-traceplot(bayesion_model_5, pars = params_5, inc_warmup = TRUE)
+params_5a <- c('beta0', 'beta1', 'sigma')
+traceplot(bayesion_model_5a, pars = params_5a, inc_warmup = TRUE)
 ```
 
 
@@ -824,39 +824,96 @@ traceplot(bayesion_model_5, pars = params_5, inc_warmup = TRUE)
 
 
 ```{r}
-br_vs_br_coeficients(bayesion_model_1, bayesion_model_5, params_5)
+br_vs_br_coeficients(bayesion_model_1, bayesion_model_5a, params_5a)
 ```
 
-
-#### 3. Validación
-
-```{r}
-lm_vs_br_models_validation(lineal_model_1, bayesion_model_1, params_1, vars_1, test_set)
-```
-#### 4. Validacion
+#### 3. Validacion
 
 ```{r}
-vars_5 <- c('flipper_length_mm') 
+vars_5a <- c('flipper_length_mm') 
 
-lm_vs_br_models_validation(lineal_model_1, bayesion_model_5, params_5, vars_5, test_set)
+lm_vs_br_models_validation(lineal_model_1, bayesion_model_5a, params_5a, vars_5a, test_set)
 ```
 
 ```{r fig.align='center', fig.height=3, fig.width=10, message=FALSE, warning=FALSE, fig.align='center'}
-bayesion_predictor_5 <- BayesianRegressionPredictor.from(bayesion_model_5, params_5, vars_5)
+bayesion_predictor_5a <- BayesianRegressionPredictor.from(bayesion_model_5a, params_5a, vars_5a)
 
 plot_compare_fit(
   bayesion_predictor_1,
-  bayesion_predictor_5,
+  bayesion_predictor_5a,
   train_set,
   label_1='Regresion Bayesiana con dist informativa', 
-  label_2='Regresion Bayesiana con dist menos informativa'
+  label_2='Regresion Bayesiana con dist menos informativa (uniforme)'
 )
 ```
 
 ### 2. Modelo bayesiano con parametro con distribucion muy informativa sesgada o con poca varianza
 
-COMPLETAR
+Para las distribuciones de los parametros (priors) indicamos una distribucion normal informativa tomando los valores de la media y el desvio como aquellos encontrados en los experimentos anteriores:
 
+```{r fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.align='center', echo=FALSE}
+bayesion_model_5b <- stan(
+  model_code =  "
+    data {
+      int<lower=1>               obs_count;
+      vector<lower=1>[obs_count] x;
+      vector[obs_count]          y;
+    }
+    parameters {
+      real          beta0;
+      real          beta1;
+      real<lower=0> sigma;
+    }
+    model {
+      // Distribuciones a priori
+      beta0 ~ normal(-5000, 100); // Intercept
+      beta1 ~ normal(50, 5);
+      sigma ~ exponential(0.5);
+  
+      // Likelihood
+      y ~ normal(beta0 + beta1 * x, sigma);
+    }
+  ",
+  data = list(
+      obs_count = nrow(train_set),
+      x = colvalues(train_set, 'flipper_length_mm'),
+      y  = colvalues(train_set, 'body_mass_g')
+  ),
+  chains = 3,
+  iter   = 2000,
+  warmup = 300,
+  thin   = 1
+)
+
+params_5b <- c('beta0', 'beta1', 'sigma')
+traceplot(bayesion_model_5b, pars = params_5b, inc_warmup = TRUE)
+```
+#### 2. Coeficientes
+
+
+```{r}
+br_vs_br_coeficients(bayesion_model_5a, bayesion_model_5b,params_5a)
+```
+#### 3. Validacion
+
+```{r}
+vars_5b <- c('flipper_length_mm') 
+
+lm_vs_br_models_validation(lineal_model_1, bayesion_model_5b, params_5b, vars_5b, test_set)
+```
+
+```{r fig.align='center', fig.height=3, fig.width=10, message=FALSE, warning=FALSE, fig.align='center'}
+bayesion_predictor_5a <- BayesianRegressionPredictor.from(bayesion_model_5a, params_5a, vars_5a)
+bayesion_predictor_5b <- BayesianRegressionPredictor.from(bayesion_model_5b, params_5b, vars_5b)
+
+plot_compare_fit(
+  bayesion_predictor_5a,
+  bayesion_predictor_5b,
+  train_set,
+  label_1='Regresion Bayesiana con dist menos informativa (uniforme)', 
+  label_2='Regresion Bayesiana con dist muy informativa'
+)
+```
 
 
 ## Referencias
