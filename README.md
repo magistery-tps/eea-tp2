@@ -54,4 +54,5 @@ $ docker-compose up
 * **Username**: rstudio
 * **Password**: 1234
 
+**Nota**: Por defecto se monta el directorio /home/$USER en el path /home/rstudio dentro del container.
 
