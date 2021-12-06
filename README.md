@@ -51,7 +51,7 @@ $ docker-compose up
 
 **Paso 3**: Iniciar session con el siguiente usuario:
 
-* Username: rstudio
-* Password: 1234
+* **Username**: rstudio
+* **Password**: 1234
 
 
